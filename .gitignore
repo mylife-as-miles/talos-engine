@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.env
+.DS_Store
+*.log
+*.tsbuildinfo
+data/
+
+# Local AI-agent workspace/config artifacts
+.agents/
+.claude/
+.codex/
+
+# Generated local install output from the Talos CLI
+packages/talos/talos/
