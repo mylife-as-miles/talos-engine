@@ -1,0 +1,24 @@
+{
+  "name": "talos-oss",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "build:libs": "npm run build --workspace=@talos/engine --workspace=@talos/db",
+    "postinstall": "npm run build:libs",
+    "dev": "VIDEOS_DIR=$PWD/data/videos SCREENSHOTS_DIR=$PWD/data/screenshots concurrently --names api,worker,web --prefix-colors cyan,yellow,magenta \"PORT=11114 npm run dev:api\" \"PORT=11114 npm run dev:worker\" \"npm run dev:web\"",
+    "dev:api": "npm run dev --workspace=apps/api",
+    "dev:worker": "npm run dev --workspace=apps/worker",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "migrate": "npm run migrate --workspace=packages/db"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.3"
+  }
+}
