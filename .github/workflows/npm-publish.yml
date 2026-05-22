@@ -1,0 +1,128 @@
+name: Publish npm packages
+
+# Fires when you publish a GitHub Release or via manual dispatch.
+# Auth: npm Trusted Publishing (OIDC) — no NPM_TOKEN secret required.
+# Each package is enrolled at npmjs.com → package settings → Publishing access.
+#
+# Publishes are idempotent: if a package's local version already exists
+# on the registry, that job skips its publish step (no failure).
+#
+# Note: --provenance is intentionally NOT used. It requires a PUBLIC source repo;
+# this repo is private, so provenance bundles get rejected by npm.
+#
+# Job graph:
+#   publish-client ─┐
+#                   ├─► publish-mcp  (mcp depends on @talosai/client being live)
+#   publish-talosai ─┘
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  publish-client:
+    name: Publish @talosai/client
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+      - name: Upgrade npm (Trusted Publishing requires >= 11.5.1)
+        run: npm install -g npm@latest
+      - name: Install (skip internal postinstall builds)
+        run: npm ci --ignore-scripts
+      - name: Check if already published
+        id: check
+        run: |
+          VERSION=$(node -p "require('./packages/client/package.json').version")
+          if npm view "@talosai/client@${VERSION}" version >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "@talosai/client@${VERSION} already on npm — skipping."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "Will publish @talosai/client@${VERSION}."
+          fi
+      - name: Build
+        if: steps.check.outputs.skip == 'false'
+        run: npm run build --workspace=packages/client
+      - name: Publish
+        if: steps.check.outputs.skip == 'false'
+        run: npm publish --workspace=packages/client --access public
+
+  publish-talosai:
+    name: Publish talosai
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+      - name: Upgrade npm
+        run: npm install -g npm@latest
+      - name: Install
+        run: npm ci --ignore-scripts
+      - name: Check if already published
+        id: check
+        run: |
+          VERSION=$(node -p "require('./packages/talos/package.json').version")
+          if npm view "talosai@${VERSION}" version >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "talosai@${VERSION} already on npm — skipping."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "Will publish talosai@${VERSION}."
+          fi
+      - name: Build
+        if: steps.check.outputs.skip == 'false'
+        run: npm run build --workspace=packages/talos
+      - name: Publish
+        if: steps.check.outputs.skip == 'false'
+        run: npm publish --workspace=packages/talos --access public
+
+  publish-mcp:
+    name: Publish @talosai/mcp
+    runs-on: ubuntu-latest
+    needs: publish-client
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+      - name: Upgrade npm
+        run: npm install -g npm@latest
+      - name: Install
+        run: npm ci --ignore-scripts
+      - name: Check if already published
+        id: check
+        run: |
+          VERSION=$(node -p "require('./packages/mcp/package.json').version")
+          if npm view "@talosai/mcp@${VERSION}" version >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "@talosai/mcp@${VERSION} already on npm — skipping."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "Will publish @talosai/mcp@${VERSION}."
+          fi
+      - name: Build @talosai/client (workspace dep)
+        if: steps.check.outputs.skip == 'false'
+        run: npm run build --workspace=packages/client
+      - name: Build
+        if: steps.check.outputs.skip == 'false'
+        run: npm run build --workspace=packages/mcp
+      - name: Publish
+        if: steps.check.outputs.skip == 'false'
+        run: npm publish --workspace=packages/mcp --access public
