@@ -1,0 +1,23 @@
+{
+  "name": "@talos/db",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "migrate": "tsx src/migrate.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.0",
+    "pg": "^8.13.0",
+    "@talos/engine": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.11.0",
+    "tsx": "^4.19.0"
+  }
+}
