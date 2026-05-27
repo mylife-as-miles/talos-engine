@@ -1,0 +1,26 @@
+{
+  "name": "@talos/engine",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "node --import tsx --test src/__tests__/*.test.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.81.0",
+    "@browserbasehq/stagehand": "^2.3.0",
+    "@clerk/testing": "^2.0.8",
+    "@google/genai": "^1.47.0",
+    "openai": "^6.33.0",
+    "pino": "^9.6.0",
+    "playwright": "^1.50.0",
+    "sharp": "^0.34.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}
