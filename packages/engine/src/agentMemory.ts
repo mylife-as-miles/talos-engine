@@ -1,0 +1,236 @@
+import { logger } from "./logger.js";
+import type { StorageAdapter } from "./storage.js";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export type MemoryEntryType = "learned_path" | "ignore_region" | "avoid_region" | "bug_pattern" | "tip";
+export type MemorySource = "agent" | "user";
+
+export type MemoryEntry = {
+  id: string;
+  project_id: string | null;
+  type: MemoryEntryType;
+  summary: string;
+  content: string;
+  region?: { description: string } | null;
+  source: MemorySource;
+  confidence: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MemoryEntryInsert = {
+  type: MemoryEntryType;
+  summary: string;
+  content: string;
+  region?: { description: string } | null;
+  source?: MemorySource;
+  confidence?: number;
+};
+
+// ─── Load (via StorageAdapter) ──────────────────────────────────────────────
+
+export async function loadProjectMemory(storage: StorageAdapter, projectId: string): Promise<MemoryEntry[]> {
+  try {
+    return await storage.loadProjectMemory(projectId);
+  } catch {
+    return [];
+  }
+}
+
+// ─── Save (via StorageAdapter) ──────────────────────────────────────────────
+
+export async function saveProjectMemoryEntries(
+  storage: StorageAdapter,
+  projectId: string,
+  entries: MemoryEntryInsert[],
+): Promise<void> {
+  if (entries.length === 0) return;
+  try {
+    await storage.saveProjectMemoryEntries(projectId, entries);
+    logger.info({ projectId, count: entries.length }, "Saved project memory entries");
+  } catch (err) {
+    logger.warn({ err: String(err) }, "Failed to save project memory entries");
+  }
+}
+
+// ─── Boost confidence ─────────────────────────────────────────────────────────
+
+export async function boostConfidence(storage: StorageAdapter, ids: string[], amount = 5): Promise<void> {
+  if (ids.length === 0) return;
+  await storage.boostConfidence(ids, amount);
+}
+
+// ─── Format for prompt ────────────────────────────────────────────────────────
+
+const TYPE_LABELS: Record<MemoryEntryType, string> = {
+  learned_path:  "Learned paths (navigation sequences that worked)",
+  ignore_region: "Regions/elements to IGNORE (don't interact with these)",
+  avoid_region:  "Regions/elements to AVOID (caused failures before)",
+  bug_pattern:   "Known bug patterns (watch for / work around these)",
+  tip:           "Tips and hints",
+};
+
+/** Compute a human-readable temporal label for a memory entry. */
+function temporalLabel(entry: MemoryEntry): string {
+  const ageMs = Date.now() - new Date(entry.updated_at).getTime();
+  const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));
+  if (ageDays === 0) return "today";
+  if (ageDays === 1) return "yesterday";
+  if (ageDays <= 7) return `${ageDays} days ago`;
+  if (ageDays <= 30) return `${Math.floor(ageDays / 7)} weeks ago`;
+  return `${Math.floor(ageDays / 30)} months ago`;
+}
+
+export function formatMemoryForPrompt(entries: MemoryEntry[]): string {
+  if (entries.length === 0) return "";
+
+  const grouped = new Map<MemoryEntryType, MemoryEntry[]>();
+  for (const e of entries) {
+    const arr = grouped.get(e.type) ?? [];
+    arr.push(e);
+    grouped.set(e.type, arr);
+  }
+
+  // Sort each group by confidence (highest first) for relevance prioritization
+  for (const [, items] of grouped) {
+    items.sort((a, b) => b.confidence - a.confidence);
+  }
+
+  const sections: string[] = [];
+  const typeOrder: MemoryEntryType[] = ["learned_path", "tip", "ignore_region", "avoid_region", "bug_pattern"];
+  for (const t of typeOrder) {
+    const items = grouped.get(t);
+    if (!items || items.length === 0) continue;
+    const lines = items.map((e) => {
+      const conf = e.confidence >= 80 ? " [HIGH confidence]" : e.confidence <= 30 ? " [low confidence]" : "";
+      const regionNote = e.region?.description ? ` (region: ${e.region.description})` : "";
+      const temporal = ` (learned ${temporalLabel(e)})`;
+      return `  - ${e.summary}: ${e.content}${regionNote}${conf}${temporal}`;
+    });
+    sections.push(`${TYPE_LABELS[t]}:\n${lines.join("\n")}`);
+  }
+
+  return `AGENT MEMORY (from previous runs — use this to guide your actions, prioritize high-confidence recent entries):\n${sections.join("\n\n")}`;
+}
+
+// ─── Propose memories from run results ────────────────────────────────────────
+
+export type ProposedMemory = MemoryEntryInsert;
+
+export function proposeMemoriesFromRun(
+  steps: Array<{
+    action: string;
+    target?: string;
+    reasoning?: string;
+    url?: string;
+    status: string;
+    bugType?: string;
+    severity?: string;
+  }>,
+  intent: string,
+): ProposedMemory[] {
+  const proposals: ProposedMemory[] = [];
+
+  const okSteps = steps.filter((s) => s.status === "ok" && s.action !== "bug" && s.action !== "done" && s.action !== "auth");
+  if (okSteps.length >= 2) {
+    const pathDesc = okSteps
+      .map((s) => {
+        if (s.action === "navigate") return `navigate to ${s.target ?? "page"}`;
+        if (s.action === "click") return `click "${s.target ?? "element"}"`;
+        if (s.action === "fill") return `fill "${s.target ?? "field"}"`;
+        return `${s.action} ${s.target ?? ""}`.trim();
+      })
+      .join(" → ");
+    proposals.push({
+      type: "learned_path",
+      summary: `Path for: ${intent.slice(0, 80)}`,
+      content: pathDesc,
+      confidence: 60,
+    });
+  }
+
+  const bugs = steps.filter((s) => s.action === "bug");
+  for (const bug of bugs) {
+    proposals.push({
+      type: "bug_pattern",
+      summary: `${bug.bugType ?? "bug"} on ${bug.url ?? "page"}`,
+      content: bug.reasoning ?? "Bug detected during run",
+      confidence: 50,
+    });
+  }
+
+  const failedTargets = new Map<string, number>();
+  for (const s of steps) {
+    if (s.status === "failed" && s.target) {
+      failedTargets.set(s.target, (failedTargets.get(s.target) ?? 0) + 1);
+    }
+  }
+  for (const [target, count] of failedTargets) {
+    if (count >= 2) {
+      proposals.push({
+        type: "avoid_region",
+        summary: `Avoid "${target}"`,
+        content: `Clicking/interacting with "${target}" failed ${count} times during a run.`,
+        confidence: 40,
+      });
+    }
+  }
+
+  return proposals;
+}
+
+// ─── Confidence decay + pruning ──────────────────────────────────────────────
+
+const DECAY_THRESHOLD_DAYS = 14;
+const DECAY_AMOUNT = 10;
+const PRUNE_CONFIDENCE_MIN = 10;
+
+/**
+ * Apply confidence decay to entries older than DECAY_THRESHOLD_DAYS,
+ * and prune entries that fall below the minimum confidence threshold.
+ * Returns the list of IDs that were pruned (caller can delete from storage).
+ */
+export function decayAndPrune(entries: MemoryEntry[]): { surviving: MemoryEntry[]; prunedIds: string[] } {
+  const now = Date.now();
+  const surviving: MemoryEntry[] = [];
+  const prunedIds: string[] = [];
+
+  for (const entry of entries) {
+    const ageMs = now - new Date(entry.updated_at).getTime();
+    const ageDays = ageMs / (1000 * 60 * 60 * 24);
+
+    // Decay confidence for old entries
+    let confidence = entry.confidence;
+    if (ageDays > DECAY_THRESHOLD_DAYS) {
+      const decayMultiplier = Math.floor(ageDays / DECAY_THRESHOLD_DAYS);
+      confidence = Math.max(0, confidence - DECAY_AMOUNT * decayMultiplier);
+    }
+
+    if (confidence < PRUNE_CONFIDENCE_MIN) {
+      prunedIds.push(entry.id);
+    } else {
+      surviving.push({ ...entry, confidence });
+    }
+  }
+
+  return { surviving, prunedIds };
+}
+
+/**
+ * Load memory with automatic decay and pruning applied.
+ */
+export async function loadProjectMemoryWithDecay(storage: StorageAdapter, projectId: string): Promise<MemoryEntry[]> {
+  const raw = await loadProjectMemory(storage, projectId);
+  const { surviving } = decayAndPrune(raw);
+  return surviving;
+}
+
+// ─── Legacy compat ─────────────────────────────────────────────────────────────
+
+export type AgentFact = {
+  selector: string;
+  purpose: string;
+  action: "fill" | "click" | "navigate";
+  hits: number;
+};
