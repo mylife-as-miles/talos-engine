@@ -1,0 +1,46 @@
+{
+  "name": "@talosai/mcp",
+  "version": "0.2.0",
+  "description": "Talos MCP server — lets AI agents in your IDE run browser tests via Talos",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "talos-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "dependencies": {
+    "@talosai/client": "*",
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "talos",
+    "mcp",
+    "ai",
+    "testing",
+    "browser"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Talos-HQ/Talos.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
