@@ -1,0 +1,95 @@
+import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { TalosClient } from "@talosai/client";
+import { AuthInput, authInputToApiPayload } from "../validation.js";
+
+export function registerAuthTool(server: McpServer, client: TalosClient) {
+  server.tool(
+    "talos_update_auth",
+    `Update the authentication configuration for a project environment.
+
+WHEN TO USE:
+  • User says "add login credentials", "configure auth", "my app requires login", "update the password"
+  • Setting up auth for a newly added environment (after talos_add_environment)
+  • Rotating credentials (password changed, new secret key issued)
+  • Switching auth provider (e.g. from form to clerk)
+  • Disabling auth — set mode to 'none' for public environments
+
+IMPORTANT — get IDs first:
+  Call talos_list_projects to see projectId and environmentId before calling this tool.
+
+AUTH MODE GUIDE:
+  'none'     — public app, no login. Clears any existing auth config.
+  'form'     — standard HTML login form. Auto-detection is always on: Talos finds the login
+               page and form selectors automatically. loginUrl is an optional hint — if omitted
+               or if the login attempt fails, Talos falls back to base-URL route discovery.
+               Provide username and password. Add totpSecret for 2FA/TOTP apps.
+  'clerk'    — app uses Clerk. Provide frontendApiUrl, secretKey (sk_test_/sk_live_), email.
+               Your app must be configured correctly or sign-in will silently redirect to accounts.dev:
+                 1. clerkMiddleware() must be present in middleware.ts (or proxy.ts for Next.js 16+).
+                    Without it, auth() always returns null server-side even with a valid client session.
+                 2. /sign-in route must render Clerk's <SignIn /> component. Talos lands here, loads
+                    Clerk JS, signs in via @clerk/testing, then redirects back to the app.
+                    Do NOT make / a public route — unauthenticated users must hit /sign-in first.
+                 3. Set NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in in .env.local so auth.protect()
+                    redirects to your app's own sign-in page, not the hosted accounts.dev/sign-in.
+                 4. Make sure the configured environment URL origin is allowed anywhere your app
+                    or identity provider enforces allowed origins or redirect destinations.
+               If running against a local dev server:
+                 - Use the same base URL a user would open in a browser.
+                 - Make sure the app server is reachable from Talos.
+                 - Call talos_test_connection to verify reachability before running a browser test.
+                 - Create the test user in the Clerk dashboard for your app (not your personal Clerk account)
+  'supabase' — app uses Supabase Auth. Provide projectUrl, anonKey, email, password.
+
+VALIDATION enforced before the API call:
+  • 'clerk' mode requires frontendApiUrl (URL), secretKey (must start sk_test_ or sk_live_), email
+  • 'supabase' mode requires projectUrl (URL), anonKey (non-empty), email, password (non-empty)
+  • Each mode only accepts its own fields — mismatches are caught immediately`,
+    {
+      projectId: z.string().uuid().describe("Project ID (get from talos_list_projects)"),
+      environmentId: z
+        .string()
+        .uuid()
+        .describe("Environment ID to configure auth for (get from talos_list_projects)"),
+      auth: AuthInput,
+    },
+    async ({ projectId, environmentId, auth }) => {
+      const healthy = await client.checkHealth();
+      if (!healthy) {
+        return {
+          content: [{ type: "text", text: "Talos is not running. Call talos_start first." }],
+          isError: true,
+        };
+      }
+
+      const { apiMode, apiConfig } = authInputToApiPayload(auth);
+      await client.setAuth(projectId, environmentId, apiMode, apiConfig);
+
+      const statusMessages: Record<string, string> = {
+        none: "Auth cleared — this environment will test without logging in.",
+        form: "Form login configured. Talos will navigate to the login page and sign in before each test.",
+        clerk: "Clerk auth configured. Talos will obtain a session token via the Clerk API before each test.",
+        supabase: "Supabase auth configured. Talos will sign in via the Supabase API before each test.",
+      };
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            updated: true,
+            projectId,
+            environmentId,
+            authMode: auth.mode,
+            message: statusMessages[auth.mode],
+            nextSteps: [
+              auth.mode !== "none"
+                ? `Auth set (${auth.mode}). Call talos_test_connection to verify the environment is reachable, then call talos_run_test to verify sign-in works.`
+                : "Auth cleared. Call talos_test_connection to verify reachability, then call talos_run_test to test public pages.",
+            ],
+          }),
+        }],
+      };
+    },
+  );
+}
