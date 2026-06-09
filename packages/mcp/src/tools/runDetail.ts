@@ -1,0 +1,143 @@
+import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { TalosClient } from "@talosai/client";
+
+export function registerRunDetailTool(server: McpServer, client: TalosClient) {
+  server.tool(
+    "talos_get_run",
+    `Get detailed results of a specific test run, including every step the AI agent took and all bugs found.
+
+WHEN TO USE:
+  • After talos_run_test returns a runId, call this to get the full trace
+  • User asks "what happened in that test run", "show me the steps"
+  • Debugging why a test failed — the steps show exactly what the agent clicked/typed and where it got stuck
+  • Getting screenshot URLs for bugs found in a run
+
+STEP STRUCTURE: Each step shows the agent's action (click, type, navigate, observe), the target element, reasoning, and status (ok/failed/skipped).
+
+Get runIds from talos_run_test results or talos_list_runs.`,
+    {
+      runId: z.string().uuid().describe("Run ID to look up (get from talos_run_test or talos_list_runs)"),
+      includeScreenshots: z
+        .boolean()
+        .default(false)
+        .describe(
+          "When true, each bug includes a screenshotUrl (direct URL to a JPEG). Open in a browser to view. Defaults to false to keep response size small.",
+        ),
+    },
+    async ({ runId, includeScreenshots }) => {
+      const healthy = await client.checkHealth();
+      if (!healthy) {
+        return {
+          content: [{ type: "text", text: "Talos is not running. Call talos_start to launch Docker, or check your connection." }],
+          isError: true,
+        };
+      }
+
+      try {
+        const run = await client.getRun(runId);
+        const rawBugs = run.bugs_json ?? [];
+
+        const bugs = rawBugs.map(({ screenshotBase64, screenshotPath, ...rest }) => {
+          const bug: Record<string, unknown> = {
+            id: rest.id,
+            name: rest.name,
+            description: rest.description,
+            severity: rest.severity,
+            category: rest.category,
+            status: rest.status,
+            url: rest.url,
+            source: rest.source,
+            reportedAt: rest.reportedAt,
+          };
+          if (includeScreenshots && screenshotPath) {
+            bug.screenshotUrl = `${client.apiUrl}/api/bugs/${run.id}/${screenshotPath}`;
+          }
+          return bug;
+        });
+
+        const failedSteps = (run.steps_json ?? []).filter((s) => s.status === "failed");
+        const isDiscovery = (run as any).trigger_ref === "discovery";
+
+        // For discovery runs, fetch the flows that were found
+        let discoveredFlows: { id: string; name: string; intent: string }[] = [];
+        if (isDiscovery && (run.status === "passed" || run.status === "failed")) {
+          try {
+            discoveredFlows = await client.getDiscoveredFlows(run.id);
+          } catch {
+            // non-fatal
+          }
+        }
+
+        const nextSteps: string[] = [];
+        if (isDiscovery) {
+          if (run.status === "queued" || run.status === "running") {
+            nextSteps.push("Discovery is still in progress. Call talos_get_run again once it completes.");
+          } else if (discoveredFlows.length > 0) {
+            nextSteps.push(`Discovered ${discoveredFlows.length} test(s). Call talos_list_tests to see them all.`);
+            nextSteps.push(`Run any discovered test with talos_run_test testId="<id from discoveredFlows>"`);
+          } else {
+            nextSteps.push("Discovery completed but no new tests were found.");
+          }
+        } else {
+          if (bugs.length > 0) {
+            nextSteps.push(`${bugs.length} bug(s) found. Call talos_update_bug to mark them as resolved or wont_fix after reviewing.`);
+          } else {
+            nextSteps.push("No bugs found in this run.");
+          }
+          if (failedSteps.length > 0) {
+            nextSteps.push(`${failedSteps.length} steps failed. Check the steps array above for details on what the agent couldn't do.`);
+          }
+        }
+
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              runId: run.id,
+              status: run.status,
+              runType: isDiscovery ? "discovery" : "test",
+              displayName: (run as any).display_name ?? null,
+              summary: run.summary ?? null,
+              startedAt: run.started_at,
+              completedAt: run.completed_at,
+              stepsCount: (run.steps_json ?? []).length,
+              failedStepsCount: failedSteps.length,
+              steps: (run.steps_json ?? []).map((s) => ({
+                index: s.index,
+                action: s.action,
+                target: s.target,
+                value: s.value,
+                status: s.status,
+                reasoning: s.reasoning,
+                url: s.url,
+              })),
+              ...(isDiscovery
+                ? { discoveredFlows }
+                : {
+                    bugs,
+                    ...(includeScreenshots && {
+                      screenshotNote:
+                        "screenshotUrl fields are direct JPEG URLs served by the Talos API, accessible while Talos is running.",
+                    }),
+                  }),
+              nextSteps,
+              webUrl: client.buildWebUrl(`/runs/${run.id}`),
+            }),
+          }],
+        };
+      } catch {
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              error: `Run "${runId}" not found.`,
+              fix: "Call talos_list_runs to see available run IDs for your project.",
+            }),
+          }],
+          isError: true,
+        };
+      }
+    },
+  );
+}
