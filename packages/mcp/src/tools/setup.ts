@@ -1,0 +1,124 @@
+import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { TalosClient } from "@talosai/client";
+import { AuthInput, authInputToApiPayload, ProjectNameField } from "../validation.js";
+
+export function registerSetupTool(server: McpServer, client: TalosClient) {
+  server.tool(
+    "talos_setup_project",
+    `Create or reconfigure a Talos testing project for a web application. This is the FIRST tool to call when setting up Talos for any app.
+
+WHEN TO USE:
+  • User says "set up talos for my app", "add my project to talos", "configure talos for [app name]"
+  • Starting fresh with a new web app
+  • Reconfiguring an existing project (reuses it by name)
+
+WHAT THIS DOES:
+  1. Verifies Talos is running (helpful error if not)
+  2. Finds or creates a project with the given name
+  3. Finds or creates a default environment pointing to your app URL
+  4. Configures authentication (if provided)
+  5. Returns projectId + environmentId needed for all other tools
+  6. Returns a step-by-step next-actions checklist
+
+AUTH MODES — set auth.mode to:
+  'none'     — public app, no login (default if auth is omitted)
+  'form'     — standard HTML login form. Auto-detection always on: loginUrl is optional
+               (Talos falls back to base-URL discovery if omitted or login fails). Provide username, password.
+  'clerk'    — Clerk-protected app (provide frontendApiUrl, secretKey, email)
+  'supabase' — Supabase Auth (provide projectUrl, anonKey, email, password)
+
+VALIDATION enforced before the API call:
+  • Project name: min 2 characters
+  • baseUrl: must be a valid URL including scheme (http:// or https://)
+  • auth.mode='clerk': secretKey must start with sk_test_ or sk_live_
+  • auth.mode='supabase': projectUrl must be a URL, anonKey and password non-empty
+  • Each auth mode only accepts its own fields
+
+After setup → call talos_test_connection, then talos_run_test`,
+    {
+      name: ProjectNameField.describe("Project name (min 2 chars), e.g. 'my-saas-app', 'acme-dashboard'"),
+      baseUrl: z
+        .string()
+        .url("Must be a valid URL with scheme, e.g. 'http://localhost:3000' or 'https://staging.myapp.com'")
+        .describe("Base URL of the app to test"),
+      domain: z
+        .string()
+        .optional()
+        .describe("Domain hint for the project (e.g. 'localhost:3000'). Optional."),
+      auth: AuthInput.optional().describe(
+        "Authentication config. Omit entirely for public apps. " +
+        "Each mode requires its own fields — see the auth.mode description.",
+      ),
+    },
+    async ({ name, baseUrl, domain, auth }) => {
+      const healthy = await client.checkHealth();
+      if (!healthy) {
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({
+              error: "Talos is not running.",
+              fix: "Call talos_start to launch Talos via Docker, then retry talos_setup_project.",
+              alternative: "Run 'docker compose up -d' in the Talos repo directory.",
+            }),
+          }],
+          isError: true,
+        };
+      }
+
+      // Find or create project
+      const existing = await client.listProjects();
+      let project = existing.find((p) => p.name === name);
+      let created = false;
+
+      if (!project) {
+        project = await client.createProject(name, domain);
+        created = true;
+      }
+
+      // Find or create default environment
+      const envs = await client.listEnvironments(project.id);
+      let env = envs.find((e) => e.base_url === baseUrl) ?? envs.find((e) => e.is_default);
+
+      if (!env) {
+        env = await client.createEnvironment(project.id, "Local Dev", baseUrl, true);
+      }
+
+      // Configure auth
+      if (auth && auth.mode !== "none") {
+        const { apiMode, apiConfig } = authInputToApiPayload(auth);
+        await client.setAuth(project.id, env.id, apiMode, apiConfig);
+      }
+
+      const authLabel = auth?.mode ?? "none";
+
+      return {
+        content: [{
+          type: "text",
+          text: JSON.stringify({
+            status: created ? "created" : "existing_reused",
+            projectId: project.id,
+            environmentId: env.id,
+            projectName: project.name,
+            baseUrl: env.base_url,
+            authMode: authLabel,
+            webUrl: client.buildWebUrl(`/projects/${project.id}`),
+            message: created
+              ? `Project "${name}" created successfully.`
+              : `Project "${name}" already exists — reusing it.`,
+            nextSteps: [
+              `Step 1 ✓ — Project set up. projectId="${project.id}", environmentId="${env.id}"`,
+              `Step 2 — Call talos_test_connection with projectId="${project.id}" and environmentId="${env.id}".`,
+              `Step 3 — Call talos_run_test with projectId="${project.id}" and an intent like "verify the main user flow works".`,
+              `Step 4 — Call talos_get_bugs with projectId="${project.id}" to review any bugs found.`,
+              authLabel === "none"
+                ? "Note: No auth configured. If your app requires login, call talos_update_auth to add credentials."
+                : `Auth configured (${authLabel}). Talos will automatically sign in before each test run.`,
+            ],
+          }),
+        }],
+      };
+    },
+  );
+}
