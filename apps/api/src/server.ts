@@ -1,0 +1,114 @@
+import Fastify from "fastify";
+import cors from "@fastify/cors";
+import staticPlugin from "@fastify/static";
+import { fileURLToPath } from "url";
+import path from "path";
+import fs from "fs";
+import { config } from "./config.js";
+import { initEngineConfig, updateEngineConfig } from "@talos/engine";
+import { initPool } from "@talos/db";
+import { PostgresAdapter } from "@talos/db";
+import { registerProjectRoutes } from "./routes/projects.js";
+import { registerRunRoutes } from "./routes/runs.js";
+import { registerTestRoutes } from "./routes/tests.js";
+import { registerGroupRoutes } from "./routes/groups.js";
+import { registerBugRoutes } from "./routes/bugs.js";
+import { registerSettingsRoutes, applyDbModelSettings, applyDbApiKeySettings } from "./routes/settings.js";
+import { Redis } from "ioredis";
+import { createRunQueue } from "./runQueue.js";
+import { recoverInterruptedRuns } from "./runQueueRecovery.js";
+
+// Initialize engine config from environment
+initEngineConfig({
+  openaiApiKey: config.openaiApiKey,
+  openrouterApiKey: config.openrouterApiKey,
+  anthropicApiKey: config.anthropicApiKey,
+  geminiApiKey: config.geminiApiKey,
+  agentModel: config.agentModel,
+  auxiliaryModel: config.auxiliaryModel,
+  reviewAgentModel: config.reviewAgentModel,
+  stagehandEnabled: config.stagehandEnabled,
+  stagehandModel: config.stagehandModel,
+  runTimeoutMinutes: config.runTimeoutMinutes,
+  llmTimeoutMs: config.llmTimeoutMs,
+  reviewTimeoutMs: config.reviewTimeoutMs,
+  modelPriceUsdPerMillion: {},
+});
+
+// Initialize database
+const pool = initPool(config.databaseUrl);
+const storage = new PostgresAdapter(pool);
+
+// Initialize BullMQ queues (enqueue only — execution handled by the worker process)
+const { queue: runQueue } = createRunQueue(config.redisUrl);
+/** Redis client for live snapshot reads and run stop signals. */
+const redis = new Redis(config.redisUrl, { maxRetriesPerRequest: null });
+
+const app = Fastify({ logger: true });
+
+await app.register(cors, {
+  origin: [config.appUrl, "http://localhost:11111", "http://localhost:11113", "http://localhost:3000", "http://localhost:5173"],
+  credentials: true,
+});
+
+// Per-request correlation ID: extract runId from URL params for run-scoped logging
+app.addHook("onRequest", (request, _reply, done) => {
+  const runIdMatch = request.url.match(/\/runs\/([a-f0-9-]+)/);
+  if (runIdMatch) {
+    (request as any).runCorrelationId = runIdMatch[1];
+  }
+  done();
+});
+
+// Apply DB-persisted API key overrides (DB wins over .env), then model overrides
+await applyDbApiKeySettings(storage);
+await applyDbModelSettings(storage);
+
+await recoverInterruptedRuns(storage, runQueue, redis);
+
+// Health check
+app.get("/health", async () => ({ status: "ok" }));
+
+// Register routes — pass storage adapter and run queue
+registerProjectRoutes(app, storage, runQueue, redis);
+registerRunRoutes(app, storage, runQueue, redis, config.redisUrl);
+registerTestRoutes(app, storage);
+registerGroupRoutes(app, storage);
+registerBugRoutes(app, storage);
+registerSettingsRoutes(app, storage);
+
+// Serve built frontend (production / Docker). In dev, the Vite dev server handles this.
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const webDist = path.resolve(__dirname, "../../web/dist");
+if (fs.existsSync(webDist)) {
+  await app.register(staticPlugin, { root: webDist });
+  app.setNotFoundHandler((req, reply) => {
+    if (req.url.startsWith("/api/")) {
+      reply.code(404).send({ message: "Not found" });
+      return;
+    }
+    reply.sendFile("index.html");
+  });
+}
+
+// Start server
+try {
+  await app.listen({ port: config.port, host: "0.0.0.0" });
+  console.log(`Talos API listening on port ${config.port}`);
+} catch (err) {
+  app.log.error(err);
+  process.exit(1);
+}
+
+// Graceful shutdown
+async function shutdown() {
+  console.log("Shutting down gracefully...");
+  await runQueue.close();
+  await app.close();
+  await pool.end();
+  await redis.quit().catch(() => {});
+  process.exit(0);
+}
+
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
