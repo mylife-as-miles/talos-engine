@@ -1,0 +1,598 @@
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  SquaresFour,
+  Pulse,
+  WarningCircle,
+  CaretRight,
+  Globe,
+  FlowArrow,
+  Play,
+  Circle,
+  Check,
+  X,
+  Sparkle,
+  CurrencyDollar,
+  Bug,
+} from "@phosphor-icons/react";
+import { PageHeader } from "@/components/page-header";
+import { KpiCard } from "@/components/kpi-card";
+import { EmptyState } from "@/components/empty-state";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { statusVariant, duration, relativeTime, formatCost, formatRunCost, runListLabel } from "@/lib/formatters";
+import { useProject } from "@/lib/projectContext";
+import {
+  fetchProjectOverview, fetchProjectRuns, fetchProjectBugs,
+  fetchEnvironments, fetchTests,
+} from "@/projectApi";
+
+// ─── Setup steps ──────────────────────────────────────────────────────────────
+
+type StepStatus = "complete" | "current" | "upcoming";
+
+interface SetupStep {
+  key: string;
+  label: string;
+  description: string;
+  icon: React.ElementType;
+  href: string;
+  buttonLabel: string;
+}
+
+const SETUP_STEPS: SetupStep[] = [
+  {
+    key: "environment",
+    label: "Set up credentials",
+    description: "Add your app's frontend URL and login credentials so Talos knows where and how to test.",
+    icon: Globe,
+    href: "/environments",
+    buttonLabel: "Add credentials",
+  },
+  {
+    key: "flow",
+    label: "Run your first test on app",
+    description:
+      "Create your first custom test, or let the agent explore without a script.",
+    icon: FlowArrow,
+    href: "/tests",
+    buttonLabel: "Create flow",
+  },
+  {
+    key: "run",
+    label: "Run your first test",
+    description:
+      "Execute tests in a real browser and surface bugs and issues you might have missed.",
+    icon: Play,
+    href: "/tests",
+    buttonLabel: "Run test",
+  },
+];
+
+const setupDismissStorageKey = (projectId: string) =>
+  `talos_overview_setup_dismissed_${projectId}`;
+
+function SetupChecklist({
+  completedSteps,
+  navigate,
+  onDismiss,
+}: {
+  completedSteps: Set<string>;
+  navigate: (path: string) => void;
+  onDismiss: () => void;
+}) {
+  let foundCurrent = false;
+
+  return (
+    <Card className="overflow-hidden">
+      <div className="flex items-start justify-between gap-3 p-4 pb-2 border-b glass-divider bg-muted/10">
+        <div className="min-w-0">
+          <h2 className="text-[14px] font-semibold text-foreground">Get started</h2>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-7 shrink-0 gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+          onClick={onDismiss}
+        >
+          <X className="h-3.5 w-3.5" />
+          Skip
+        </Button>
+      </div>
+      <CardContent className="p-4 pt-4">
+
+      {/* Stepper — fixed-width left column for dots + lines */}
+      <div className="relative">
+        {SETUP_STEPS.map((step, i) => {
+          const done = completedSteps.has(step.key);
+          let status: StepStatus = "upcoming";
+          if (done) {
+            status = "complete";
+          } else if (!foundCurrent) {
+            status = "current";
+            foundCurrent = true;
+          }
+
+          const isLast = i === SETUP_STEPS.length - 1;
+
+          return (
+            <div key={step.key} className="flex gap-4">
+              {/* Left column: dot + line */}
+              <div className="flex flex-col items-center w-6 flex-shrink-0">
+                {/* Dot */}
+                {done ? (
+                  <div className="h-6 w-6 rounded-full bg-primary/15 flex items-center justify-center flex-shrink-0">
+                    <Check className="h-3.5 w-3.5 text-primary" />
+                  </div>
+                ) : status === "current" ? (
+                  <div className="h-6 w-6 rounded-full border-2 border-primary flex items-center justify-center flex-shrink-0">
+                    <Circle className="h-2 w-2 fill-primary text-primary" />
+                  </div>
+                ) : (
+                  <div className="h-6 w-6 rounded-full border-2 border-border flex-shrink-0" />
+                )}
+                {/* Connecting line */}
+                {!isLast && (
+                  <div className={cn("w-px flex-1 min-h-[16px]", done ? "bg-primary/30" : "bg-border")} />
+                )}
+              </div>
+
+              {/* Right column: content */}
+              <div className={cn(
+                "flex-1 pb-6 min-w-0",
+                isLast && "pb-0",
+              )}>
+                <div className={cn(
+                  "rounded-lg transition-colors",
+                  status === "current" && "liquid-glass border-border/60 p-4 -mt-1",
+                  status === "upcoming" && "opacity-40",
+                )}>
+                  <div className="flex items-center gap-2">
+                    <step.icon className={cn(
+                      "h-4 w-4 flex-shrink-0",
+                      done ? "text-primary/60" : status === "current" ? "text-foreground" : "text-muted-foreground",
+                    )} />
+                    <span className={cn(
+                      "text-[13px] font-medium",
+                      done ? "text-muted-foreground line-through" : "text-foreground",
+                    )}>
+                      {step.label}
+                    </span>
+                  </div>
+                  <p className={cn(
+                    "text-[12px] text-muted-foreground mt-1 ml-6",
+                    status === "current" && "mt-1",
+                  )}>
+                    {step.description}
+                  </p>
+                  {status === "current" && (
+                    <div className="ml-6 mt-3">
+                      <Button size="sm" onClick={() => navigate(step.href)}>
+                        {step.buttonLabel}
+                        <CaretRight className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+        {/* Progress */}
+        <div className="mt-6 flex items-center gap-3">
+          <div className="flex-1 h-1.5 rounded-full bg-border overflow-hidden">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-500"
+              style={{ width: `${(completedSteps.size / SETUP_STEPS.length) * 100}%` }}
+            />
+          </div>
+          <span className="text-[11px] font-mono text-muted-foreground">
+            {completedSteps.size}/{SETUP_STEPS.length}
+          </span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Dashboard (shown after setup complete) ──────────────────────────────────
+
+const SEVERITY_COLOR: Record<string, string> = {
+  high: "text-status-fail",
+  medium: "text-status-warn",
+  low: "text-zinc-400 dark:text-zinc-500",
+};
+
+const RUN_STATUS_COLOR: Record<string, string> = {
+  passed: "text-status-pass",
+  pass: "text-status-pass",
+  failed: "text-status-fail",
+  fail: "text-status-fail",
+  running: "text-status-running",
+  queued: "text-status-running",
+};
+
+type BugStats = { open: number; toFix: number; ignored: number; total: number };
+type RunStats = { passed: number; failed: number; other: number; total: number };
+
+function BugsKpi({ bugStats }: { bugStats: BugStats | null }) {
+  const open = bugStats?.open ?? 0;
+  const toFix = bugStats?.toFix ?? 0;
+  const ignored = bugStats?.ignored ?? 0;
+  const total = bugStats?.total ?? 0;
+
+  return (
+    <div className="glass-card-flat card-stagger p-4 flex flex-col gap-2 min-h-[88px]">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+          Total Bugs
+        </span>
+        <Bug className="h-4 w-4 text-muted-foreground shrink-0" />
+      </div>
+      {total === 0 ? (
+        <p className="text-[12px] text-muted-foreground leading-snug">No bugs found yet.</p>
+      ) : (
+        <>
+          <div className="flex items-baseline gap-1">
+            <span className="text-2xl font-semibold tabular-nums text-foreground">{total}</span>
+            <span className="text-[12px] text-muted-foreground">bugs</span>
+          </div>
+          <p className="text-[11px] text-muted-foreground leading-snug">
+            <span className="text-status-fail">{open} open</span>
+            {" · "}
+            <span className="text-status-warn">{toFix} to fix</span>
+            {" · "}
+            <span className="text-muted-foreground">{ignored} ignored</span>
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
+function RunPassFailKpi({ runStats }: { runStats: RunStats | null }) {
+  const passed = runStats?.passed ?? 0;
+  const failed = runStats?.failed ?? 0;
+  const other = runStats?.other ?? 0;
+  const total = runStats?.total ?? 0;
+
+  return (
+    <div className="glass-card-flat card-stagger p-4 flex flex-col gap-2 min-h-[88px]">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+          Runs
+        </span>
+        <Play className="h-4 w-4 text-muted-foreground shrink-0" />
+      </div>
+      {total === 0 ? (
+        <p className="text-[12px] text-muted-foreground leading-snug">No runs yet. Run a test to see results.</p>
+      ) : (
+        <>
+          <div className="flex items-baseline gap-1">
+            <span className="text-2xl font-semibold tabular-nums text-foreground">{passed}</span>
+            <span className="text-[12px] text-muted-foreground">passed</span>
+          </div>
+          <div className="flex h-2 w-full rounded-full overflow-hidden gap-px bg-border/40">
+            {passed > 0 && (
+              <div
+                className="min-w-[3px] rounded-l-sm bg-status-pass"
+                style={{ flex: passed }}
+                title={`${passed} passed`}
+              />
+            )}
+            {failed > 0 && (
+              <div
+                className="min-w-[3px] bg-status-fail"
+                style={{ flex: failed }}
+                title={`${failed} failed`}
+              />
+            )}
+            {other > 0 && (
+              <div
+                className="min-w-[3px] rounded-r-sm bg-muted-foreground/25"
+                style={{ flex: other }}
+                title={`${other} other`}
+              />
+            )}
+          </div>
+          <p className="text-[11px] text-muted-foreground leading-snug">
+            <span className="text-status-pass">{passed} passed</span>
+            {" · "}
+            <span className="text-status-fail">{failed} failed</span>
+            {other > 0 && <>{" · "}<span className="text-muted-foreground">{other} other</span></>}
+            <span className="text-muted-foreground/70"> · {total} total</span>
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
+
+function Dashboard({
+  overview,
+  runs,
+  bugs,
+  bugStats,
+  runStats,
+  hiddenActiveRuns,
+  navigate,
+}: {
+  overview: any;
+  runs: any[];
+  bugs: any[];
+  bugStats: BugStats | null;
+  runStats: RunStats | null;
+  hiddenActiveRuns: number;
+  navigate: (path: string) => void;
+}) {
+  const totalCost = overview?.totalCostUsd ?? 0;
+  return (
+    <div className="space-y-5">
+      {/* KPI Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+        <BugsKpi bugStats={bugStats} />
+        <RunPassFailKpi runStats={runStats} />
+        <KpiCard
+          label="Project spend"
+          value={formatCost(totalCost)}
+          icon={<CurrencyDollar className="h-4 w-4" />}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Recent Issues */}
+        <Card className="min-h-[20rem]">
+          <div className="flex items-center justify-between p-4 pb-2 border-b glass-divider">
+            <span className="text-[14px] font-medium">Recent Issues</span>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/bugs")} className="h-7 text-[12px] gap-1">
+              View all <CaretRight className="h-3 w-3" />
+            </Button>
+          </div>
+          <CardContent className="pt-2">
+            {bugs.length === 0 ? (
+              <EmptyState icon={<WarningCircle className="h-5 w-5" />} title="No issues found" className="py-8" />
+            ) : (
+              <div className="space-y-1">
+                {bugs.map((bug: any, i: number) => (
+                  <button
+                    key={bug.id ?? i}
+                    onClick={() => bug.run_id && navigate(`/runs/${bug.run_id}`)}
+                    className="glass-row group w-full flex items-center gap-3 px-2.5 py-2 text-left"
+                  >
+                    <Bug className={cn("h-4 w-4 flex-shrink-0", SEVERITY_COLOR[bug.severity] ?? "text-muted-foreground/40")} />
+                    <span className="flex-1 text-[13px] text-foreground truncate">{bug.name || "Issue"}</span>
+                    {bug.category && <Badge variant="outline" className="text-[10px]">{bug.category}</Badge>}
+                    <span className="text-[11px] font-mono text-muted-foreground/60 flex-shrink-0">
+                      {relativeTime(bug.reported_at ?? bug.reportedAt)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Recent Runs */}
+        <Card className="min-h-[20rem]">
+          <div className="flex items-center justify-between p-4 pb-2 border-b glass-divider">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-[14px] font-medium">Recent Runs</span>
+              {hiddenActiveRuns > 0 && (
+                <Badge variant="warning" className="text-[10px]">
+                  {hiddenActiveRuns} queued/running not shown
+                </Badge>
+              )}
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/runs")} className="h-7 text-[12px] gap-1">
+              View all <CaretRight className="h-3 w-3" />
+            </Button>
+          </div>
+          <CardContent className="pt-2">
+            {runs.length === 0 ? (
+              <EmptyState icon={<Pulse className="h-5 w-5" />} title="No runs yet" className="py-8" />
+            ) : (
+              <div className="space-y-1">
+                {runs.map((r: any) => (
+                  <button
+                    key={r.id}
+                    onClick={() => navigate(`/runs/${r.id}`)}
+                    className="glass-row group w-full flex items-center gap-3 px-2.5 py-2 text-left"
+                  >
+                    <Play className={cn("h-4 w-4 flex-shrink-0", RUN_STATUS_COLOR[String(r.status ?? "").toLowerCase()] ?? "text-muted-foreground/40")} />
+                    <span className="flex-1 text-[13px] text-foreground truncate">
+                      {runListLabel(r)}
+                    </span>
+                    <span className="text-[11px] font-mono text-muted-foreground flex-shrink-0 tabular-nums">
+                      {formatRunCost(r)}
+                    </span>
+                    <span className="text-[11px] font-mono text-muted-foreground flex-shrink-0">
+                      {duration(r.started_at, r.completed_at)}
+                    </span>
+                    <span className="text-[11px] font-mono text-muted-foreground/60 flex-shrink-0">
+                      {relativeTime(r.completed_at ?? r.started_at)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
+
+export const Overview: React.FC = () => {
+  const navigate = useNavigate();
+  const { currentProjectId } = useProject();
+
+  const [loading, setLoading] = React.useState(true);
+  const [overview, setOverview] = React.useState<any>(null);
+  const [runs, setRuns] = React.useState<any[]>([]);
+  const [bugs, setBugs] = React.useState<any[]>([]);
+  const [hiddenActiveRuns, setHiddenActiveRuns] = React.useState(0);
+  const [bugStats, setBugStats] = React.useState<BugStats | null>(null);
+  const [runStats, setRunStats] = React.useState<RunStats | null>(null);
+  const [completedSteps, setCompletedSteps] = React.useState<Set<string>>(new Set());
+  const [setupDone, setSetupDone] = React.useState(false);
+  const [setupDismissed, setSetupDismissed] = React.useState(false);
+
+  React.useLayoutEffect(() => {
+    if (!currentProjectId) return;
+    setSetupDismissed(localStorage.getItem(setupDismissStorageKey(currentProjectId)) === "true");
+  }, [currentProjectId]);
+
+  const dismissSetup = React.useCallback(() => {
+    if (!currentProjectId) return;
+    localStorage.setItem(setupDismissStorageKey(currentProjectId), "true");
+    setSetupDismissed(true);
+  }, [currentProjectId]);
+
+  const showSetupGuideAgain = React.useCallback(() => {
+    if (!currentProjectId) return;
+    localStorage.removeItem(setupDismissStorageKey(currentProjectId));
+    setSetupDismissed(false);
+  }, [currentProjectId]);
+
+  React.useEffect(() => {
+    if (!currentProjectId) return;
+    setLoading(true);
+
+    Promise.all([
+      fetchEnvironments(currentProjectId).catch(() => ({ environments: [] })),
+      fetchTests(currentProjectId).catch(() => ({ tests: [] })),
+      fetchProjectRuns(currentProjectId).catch(() => ({ runs: [] })),
+      fetchProjectOverview(currentProjectId).catch(() => null),
+      fetchProjectBugs(currentProjectId).catch(() => ({ bugs: [] })),
+    ]).then(([envRes, testsRes, runsRes, ov, bugsRes]) => {
+      const envs = envRes.environments ?? [];
+      const tests = testsRes.tests ?? [];
+      const allRuns = runsRes.runs ?? [];
+      const allBugs = bugsRes.bugs ?? [];
+
+      const steps = new Set<string>();
+      if (envs.length > 0) steps.add("environment");
+      if (tests.length > 0) steps.add("flow");
+      if (allRuns.length > 0) steps.add("run");
+
+      setCompletedSteps(steps);
+      setSetupDone(steps.size === 3);
+      setOverview(ov);
+
+      const openBugs = allBugs.filter((b: any) => b.status === "open").length;
+      const toFixBugs = allBugs.filter((b: any) => b.status === "in_progress").length;
+      const ignoredBugs = allBugs.filter((b: any) => b.status === "wont_fix").length;
+      setBugStats({ open: openBugs, toFix: toFixBugs, ignored: ignoredBugs, total: openBugs + toFixBugs + ignoredBugs });
+
+      const passedRuns = allRuns.filter((r: any) => String(r?.status ?? "").toLowerCase() === "passed").length;
+      const failedRuns = allRuns.filter((r: any) => String(r?.status ?? "").toLowerCase() === "failed").length;
+      setRunStats({ passed: passedRuns, failed: failedRuns, other: allRuns.length - passedRuns - failedRuns, total: allRuns.length });
+
+      const recentRuns = allRuns.slice(0, 10);
+      const isActiveRun = (r: any) => {
+        const s = String(r?.status ?? "").toLowerCase();
+        return s === "running" || s === "queued";
+      };
+      const activeAllCount = allRuns.filter(isActiveRun).length;
+      const activeShownCount = recentRuns.filter(isActiveRun).length;
+      setHiddenActiveRuns(Math.max(0, activeAllCount - activeShownCount));
+      setRuns(recentRuns);
+      setBugs(allBugs.slice(0, 10));
+      setLoading(false);
+    });
+  }, [currentProjectId]);
+
+  if (!currentProjectId) {
+    return (
+      <div className="flex flex-col min-h-full">
+        <PageHeader icon={<SquaresFour className="h-4 w-4" />} title="Overview" />
+        <EmptyState
+          icon={<SquaresFour className="h-8 w-8" />}
+          title="No project selected"
+          description="Create or select a project to get started."
+          className="flex-1"
+        />
+      </div>
+    );
+  }
+
+  const showSetupPanel = !setupDone && !setupDismissed;
+
+  return (
+    <div className="flex flex-col min-h-full">
+      <PageHeader icon={<SquaresFour className="h-4 w-4" />} title="Overview">
+        {!loading && !setupDone && setupDismissed && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-7 gap-1.5 text-[11px]"
+            onClick={showSetupGuideAgain}
+          >
+            <Sparkle className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Show setup guide</span>
+            <span className="sm:hidden">Setup guide</span>
+          </Button>
+        )}
+      </PageHeader>
+
+      <div className="p-4 md:p-6 animate-page-enter">
+        {loading ? (
+          <div className="glass-stage flex flex-col lg:flex-row gap-6 lg:gap-8 items-start w-full">
+            <div className="flex-1 min-w-0 space-y-6 w-full">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                {[1, 2, 3].map((i) => (
+                  <Skeleton key={i} className="h-[72px] rounded-lg" />
+                ))}
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Skeleton className="h-[220px] rounded-lg" />
+                <Skeleton className="h-[220px] rounded-lg" />
+              </div>
+            </div>
+            <aside className="hidden lg:block w-full lg:w-[min(100%,320px)] lg:flex-shrink-0">
+              <Skeleton className="h-[320px] rounded-lg" />
+            </aside>
+          </div>
+        ) : (
+          <div
+            className={cn(
+              "glass-stage flex flex-col lg:flex-row gap-6 lg:gap-8 items-start w-full",
+              !showSetupPanel && "max-w-[1600px] mx-auto",
+            )}
+          >
+            <div className="flex-1 min-w-0 w-full space-y-6">
+              <Dashboard
+                overview={overview}
+                runs={runs}
+                bugs={bugs}
+                bugStats={bugStats}
+                runStats={runStats}
+                hiddenActiveRuns={hiddenActiveRuns}
+                navigate={navigate}
+              />
+            </div>
+            {showSetupPanel && (
+              <aside className="w-full lg:w-[min(100%,340px)] lg:max-w-[40%] lg:flex-shrink-0 lg:sticky lg:top-6 lg:self-start">
+                <SetupChecklist
+                  completedSteps={completedSteps}
+                  navigate={navigate}
+                  onDismiss={dismissSetup}
+                />
+              </aside>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
