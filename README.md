@@ -99,6 +99,7 @@ npm run dev:api   # API + Dashboard → http://localhost:11111
 
 **Integrations**
 - MCP server: run tests and triage bugs from Claude Code, Cursor, or any MCP-compatible IDE
+- UiPath Test Cloud handoff: publish Talos agent runs into a configured UiPath Test Manager project/test set
 - TypeScript client SDK for CI/CD and custom orchestration
 - REST API + SSE streaming for real-time run progress
 
@@ -137,6 +138,45 @@ Once connected, your AI assistant can scan your app, run tests, and triage bugs 
 
 ---
 
+## UiPath Test Cloud
+
+Talos can hand off completed agentic test runs to UiPath Test Cloud so Automation Cloud remains the enterprise execution and governance layer. After the browser agent finishes, the worker writes:
+
+- `talos-run.json` with the run ID, environment, intent, steps, bugs, severity counts, video URL, and LLM metrics.
+- `talos-junit.xml` with pass/fail evidence for tools that expect JUnit-style output.
+- UiPath CLI logs under `data/uipath-test-cloud/<runId>/`.
+
+Enable it with:
+
+```bash
+UIPATH_TEST_CLOUD_ENABLED=true
+UIPATH_TEST_CLOUD_MODE=modern
+UIPATH_CLI_PATH=uip
+UIPATH_TEST_CLOUD_PROJECT_KEY=<your-test-manager-project-key>
+UIPATH_TEST_CLOUD_TEST_SET_KEY=<your-test-set-key>
+UIPATH_TEST_CLOUD_EXTRA_ARGS="--profile <your-uipath-profile>"
+```
+
+The default `modern` mode invokes the UiPath CLI with `tm testsets run` and passes the generated Talos payload as input. If your UiPath Labs tenant uses the older `uipcli`, set:
+
+```bash
+UIPATH_TEST_CLOUD_MODE=legacy
+UIPATH_CLI_PATH=uipcli
+UIPATH_ORCHESTRATOR_URL=https://cloud.uipath.com/<account>/<tenant>/orchestrator_
+UIPATH_ORCHESTRATOR_TENANT=<tenant-name>
+```
+
+For lab-specific CLI syntax, use `custom` mode:
+
+```bash
+UIPATH_TEST_CLOUD_MODE=custom
+UIPATH_TEST_CLOUD_ARGS='tm testsets run --project-key {projectKey} --test-set-key {testSetKey} --input-path {payloadPath}'
+```
+
+This is the recommended hackathon positioning for Track 3: Talos supplies the coding-agent testing layer, while UiPath Test Cloud receives the governed execution record, runs the configured test set, and keeps the process visible in Automation Cloud.
+
+---
+
 ## Configuration
 
 | Variable | Default | Description |
@@ -151,6 +191,12 @@ Once connected, your AI assistant can scan your app, run tests, and triage bugs 
 | `REVIEW_AGENT_MODEL` | `claude-sonnet-4-6` | Post-run holistic and filmstrip screenshot analysis |
 | `STAGEHAND_ENABLED` | `true` | Enable Stagehand for semantic element finding |
 | `RUN_TIMEOUT_MINUTES` | `15` | Max wall-clock time per test run |
+| `UIPATH_TEST_CLOUD_ENABLED` | `false` | Publish completed Talos runs to UiPath Test Cloud |
+| `UIPATH_TEST_CLOUD_MODE` | `modern` | UiPath CLI mode: `modern`, `legacy`, or `custom` |
+| `UIPATH_CLI_PATH` | `uip` | UiPath CLI executable |
+| `UIPATH_TEST_CLOUD_PROJECT_KEY` | — | UiPath Test Manager project key |
+| `UIPATH_TEST_CLOUD_TEST_SET_KEY` | — | UiPath Test Cloud/Test Manager test set key |
+| `UIPATH_TEST_CLOUD_EXTRA_ARGS` | — | Extra CLI args such as profile, folder, or auth settings |
 
 All model settings are also configurable via the dashboard under **Settings**.
 

@@ -11,6 +11,7 @@ import { decryptValue } from "@talos/db";
 import type { Redis } from "ioredis";
 import { clearRunStopRequest, startRunStopPoller, runStopRedisKey } from "./runStopRedis.js";
 import { createRunLiveBridge, deleteLiveRunState, runEventsChannel } from "./liveRunBridge.js";
+import { publishToUiPathTestCloud } from "./uipathTestCloud.js";
 import { config } from "./config.js";
 import * as fs from "fs";
 
@@ -409,6 +410,39 @@ export async function createRunWorker(
 
           // Move bug screenshots after transaction commits so updateBugScreenshotPath can see the inserted rows
           await moveBugScreenshotsToOwnDir(data.runId, insertedBugs, storage);
+          const uipathResult = await publishToUiPathTestCloud({
+            runId: data.runId,
+            projectId: data.projectId,
+            environmentId: data.environmentId,
+            environmentName: data.environmentName,
+            baseUrl: data.baseUrl,
+            intent: data.intent,
+            triggerRef: data.triggerRef,
+            startedAt: null,
+            completedAt,
+            summary: failureSummary,
+            result,
+          });
+          if (uipathResult.enabled && !uipathResult.ok) {
+            logger.warn(
+              {
+                runId: data.runId,
+                message: uipathResult.message,
+                artifactsDir: uipathResult.artifactsDir,
+                command: uipathResult.command,
+              },
+              "UiPath Test Cloud publish failed",
+            );
+          } else if (uipathResult.enabled) {
+            logger.info(
+              {
+                runId: data.runId,
+                artifactsDir: uipathResult.artifactsDir,
+                command: uipathResult.command,
+              },
+              "UiPath Test Cloud publish complete",
+            );
+          }
           logger.info(
             {
               jobId: job.id,
