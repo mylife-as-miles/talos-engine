@@ -1,124 +1,334 @@
-<p align="center">
-  <img src="apps/web/public/logo/talos.png" width="80" alt="Talos" />
-</p>
+# Talos Test Cloud Agent
 
-<h1 align="center">Talos</h1>
+Agentic QA orchestration for UiPath Test Cloud.
 
-<p align="center">
-  <strong>AI agents that test your web app and find bugs — no test scripts required.</strong>
-</p>
+Talos runs browser-based testing agents against real web applications, captures
+evidence-rich execution traces, and prepares those results for UiPath Test
+Cloud / Test Manager so agentic QA can live inside an enterprise-governed
+testing workflow.
 
-<p align="center">
-  <a href="https://github.com/talosai/talos/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License" /></a>
-  <a href="https://www.npmjs.com/package/talosai"><img src="https://img.shields.io/npm/v/talosai.svg" alt="npm version" /></a>
-  <img src="https://img.shields.io/badge/docker-ready-2496ED?logo=docker&logoColor=white" alt="Docker" />
-  <img src="https://img.shields.io/badge/MCP-compatible-8A2BE2" alt="MCP" />
-  <a href="https://discord.gg/8npJXGWREM"><img src="https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white" alt="Discord" /></a>
-</p>
+## Why Talos Exists
 
-<br />
+Modern teams ship faster than traditional manual QA can comfortably follow.
+AI agents can explore software quickly, but raw autonomous browser sessions are
+not enough for enterprise testing. Teams need traceability, evidence, review,
+repeatability, and a clear place where test outcomes are governed.
 
-Point Talos at your web app, pick an LLM provider, and let it loose. It crawls every route, runs intent-driven tests, and hands you a report of visual, functional, and UX bugs — with screenshots and bounding boxes. No selectors to write. No scripts to maintain.
+Talos was built around that gap.
 
-<p align="center">
-  <strong><a href="https://discord.gg/8npJXGWREM">👾 Join the Discord</a> — get help, share what you find, follow development.</strong>
-</p>
+It gives testers a browser agent that can log in, navigate flows, observe page
+state, record steps, and surface issues, while keeping UiPath Test Cloud as the
+enterprise testing layer that owns execution context, test sets, review, and
+governance.
 
-<div align="center">
-  <a href="https://youtu.be/XlHBvW5y2cI">
-    <img src="https://img.youtube.com/vi/XlHBvW5y2cI/maxresdefault.jpg" width="800" alt="Watch the Talos demo" />
-  </a>
-</div>
+## What It Does
 
----
+Talos lets you describe a test goal in plain language, then turns that goal into
+a live browser test run.
+
+It can:
+
+- Launch a real browser against a target application.
+- Authenticate through configured login flows.
+- Navigate screens using semantic page understanding.
+- Capture step-by-step execution evidence.
+- Record LLM calls, costs, screenshots, observations, and issues.
+- Stream live run progress to the web dashboard.
+- Preserve run history for review and debugging.
+- Publish completed run artifacts for UiPath Test Cloud handoff.
+
+Talos is especially useful for:
+
+- Exploratory QA.
+- Smoke testing.
+- Flow discovery.
+- Regression test drafting.
+- AI-assisted test triage.
+- Human-in-the-loop quality review.
+- UiPath AgentHack Track 3 submissions focused on Test Cloud.
+
+## UiPath Test Cloud Focus
+
+Talos is designed for **UiPath AgentHack Track 3: UiPath Test Cloud**.
+
+The core idea is simple:
+
+**Talos supplies the agentic browser-testing layer. UiPath Test Cloud supplies
+the enterprise execution, orchestration, and governance layer.**
+
+When a Talos run completes, the worker can generate UiPath-ready artifacts under
+`data/uipath-test-cloud/<runId>/`, including:
+
+- `talos-run.json` with run metadata, intent, steps, issue counts, model usage,
+  cost, environment, and evidence references.
+- `uipath-input.json` with Test Manager parameter overrides such as
+  `TalosRunPayload`, `TalosRunId`, status fields, and issue counts.
+- `talos-junit.xml` for systems that consume JUnit-style pass/fail output.
+- CLI logs from the UiPath Test Cloud handoff attempt.
+
+This means Talos does not treat an AI agent run as a disposable demo. It turns
+the run into structured testing evidence that can be associated with a UiPath
+Test Manager project, test set, and test case workflow.
+
+## How The Workflow Fits Together
+
+1. A tester creates or selects a Talos project.
+2. The tester configures an environment, target URL, and optional credentials.
+3. The tester describes the desired test flow in natural language.
+4. Talos creates a run and queues it for the worker.
+5. The worker launches a browser and executes the agentic test.
+6. The agent observes the application, performs actions, and records evidence.
+7. Talos streams progress to the dashboard while persisting durable run data.
+8. A human reviewer inspects the run, steps, screenshots, and issues.
+9. Talos prepares UiPath Test Cloud artifacts for governed test execution.
+10. UiPath Test Cloud becomes the control layer for enterprise QA visibility.
+
+## Key Features
+
+### Agentic Browser Testing
+
+- Natural-language test goals.
+- Real browser execution through Playwright.
+- Authenticated application testing.
+- Step-by-step reasoning and execution traces.
+- DOM and accessibility-tree informed navigation.
+- Screenshot and visual evidence support.
+
+### Human Review
+
+- Run detail timeline.
+- Live progress panel.
+- Captured LLM calls.
+- Cost tracking.
+- Issue review.
+- Run history.
+- Evidence-first debugging when a flow is blocked.
+
+### UiPath Test Cloud Handoff
+
+- Optional UiPath publishing after a run completes.
+- Test Manager project/test set configuration.
+- Modern, legacy, and custom UiPath CLI modes.
+- Generated JSON and JUnit artifacts.
+- Manual or automated execution mode.
+- Async or blocking execution depending on `UIPATH_TEST_CLOUD_WAIT`.
+
+### Enterprise-Oriented Architecture
+
+- API and worker are separated.
+- Runs execute through a Redis-backed queue.
+- PostgreSQL stores durable project, environment, test, and run data.
+- Live progress is streamed while historical data remains reviewable.
+- Model settings can be configured through the dashboard.
+
+## Tech Stack
+
+- **Frontend:** React, TypeScript, Vite.
+- **API:** Fastify, TypeScript.
+- **Worker:** BullMQ, Redis, Playwright, TypeScript.
+- **Database:** PostgreSQL.
+- **LLM providers:** OpenRouter, OpenAI, Anthropic, Google Gemini.
+- **Testing orchestration target:** UiPath Test Cloud / Test Manager.
+- **Automation interface:** MCP server and TypeScript client package.
+
+## Repository Layout
+
+```text
+apps/
+  api/        Fastify API server
+  web/        React dashboard
+  worker/     Background run executor
+
+packages/
+  client/     TypeScript HTTP client
+  db/         PostgreSQL storage adapter and migrations
+  engine/     Agent loop, browser automation, review, memory, orchestration
+  mcp/        Model Context Protocol server
+  talos/      CLI setup package
+```
 
 ## Quick Start
 
-The fastest path: one command sets up everything.
+### Prerequisites
+
+- Node.js 20 or newer.
+- Docker Desktop.
+- At least one LLM API key.
+- UiPath CLI access if enabling Test Cloud publishing.
+
+### 1. Install Dependencies
 
 ```bash
-npx talosai
+npm install
 ```
 
-The CLI wizard asks for your LLM provider and API key, generates a `docker-compose.yml`, and starts all services. Dashboard opens at `http://localhost:11111`.
+### 2. Start Postgres And Redis
 
-**Manual Docker setup:**
+```bash
+docker compose up postgres redis -d
+```
+
+### 3. Configure Environment
 
 ```bash
 cp .env.example .env
-# Add at least one LLM key — see Configuration below
-docker compose up -d
 ```
 
-**Local development (no Docker):**
+Add at least one model provider key:
 
 ```bash
-# Requires Node 20+, PostgreSQL 16+, Redis
-npm install
-DATABASE_URL=postgresql://talos:talos@localhost:11112/talos npm run migrate
-npm run dev:api   # API + Dashboard → http://localhost:11111
+OPENROUTER_API_KEY=
+OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+GEMINI_API_KEY=
 ```
 
----
+OpenRouter is the simplest option because it can route to multiple model
+families from one key. Direct provider keys also work.
 
-## How It Works
-
-**1. Scan** — Talos BFS-crawls your app and builds a map of every route, form, modal, and interaction.
-
-**2. Plan** — For each route or saved test intent, a path-planning agent generates a sequence of steps to exercise that flow.
-
-**3. Run** — A Navigator agent drives a real Playwright browser, observing the page via accessibility tree and screenshots. A Review Agent and Filmstrip Reviewer run in parallel, watching for visual and UX regressions.
-
-**4. Report** — A Triage Agent deduplicates findings, filters false positives using memory from past runs, and outputs bugs categorized by type (visual / functional / UX) and severity — each with a screenshot and bounding box.
-
----
-
-## Features
-
-**App Discovery**
-- BFS crawler maps all routes, links, forms, and modals
-- Route health dashboard — clean / issues / stale / untested
-- Depth and scope controls per project
-
-**Autonomous Testing**
-- Intent-driven tests: describe what to test in plain English
-- Supports authenticated flows — form login, Clerk, Supabase, OAuth, API tokens
-- Navigator agent uses accessibility tree + screenshots, not brittle CSS selectors
-- Stagehand self-healing: when the DOM shifts, elements are found by intent
-
-**Bug Detection**
-- Visual bugs — layout breaks, rendering glitches, pixel regressions
-- Functional bugs — broken flows, unexpected errors, failed assertions
-- UX bugs — confusing copy, missing feedback, accessibility gaps
-- Screenshot per bug with highlighted bounding box; URL, severity, and source agent
-
-**Agent Memory**
-- Learns successful navigation paths across runs
-- Records known false positives, ignore regions, and bug patterns
-- Confidence scoring with decay — memory stays fresh, not compounding
-
-**Integrations**
-- MCP server: run tests and triage bugs from Claude Code, Cursor, or any MCP-compatible IDE
-- UiPath Test Cloud handoff: publish Talos agent runs into a configured UiPath Test Manager project/test set
-- TypeScript client SDK for CI/CD and custom orchestration
-- REST API + SSE streaming for real-time run progress
-
-**LLM Flexibility**
-- OpenRouter (recommended), OpenAI, Anthropic, Google Gemini
-- Each agent role (Navigator, Review, Auxiliary, Stagehand) configurable independently
-- Per-run token and cost tracking
-
----
-
-## MCP — Run Talos from Your IDE
-
-Install the MCP server and run tests without leaving your editor.
+### 4. Run Migrations
 
 ```bash
-npx talosai   # select "Install MCP" during setup
+npm run migrate
 ```
 
-Or add it manually to your MCP config:
+### 5. Start The App
+
+```bash
+npm run dev
+```
+
+The dashboard runs at:
+
+```text
+http://localhost:11111
+```
+
+In local development, the API usually runs on:
+
+```text
+http://localhost:11114
+```
+
+## Recommended Demo Flow
+
+For a reliable UiPath AgentHack demo, use a short, controlled testing intent
+instead of a broad autonomous crawl.
+
+Example:
+
+```text
+Log in, open Dashboard, open Chat, open Roles, observe each page, then finish.
+```
+
+This demonstrates the important pieces:
+
+- Talos can launch a browser.
+- Talos can authenticate.
+- Talos can navigate real app screens.
+- Talos can capture evidence.
+- Talos can preserve step-by-step run history.
+- Talos can prepare results for UiPath Test Cloud.
+
+Avoid very broad prompts like "discover the entire application" during a short
+demo. They are useful for exploration, but they can take longer and may get
+stuck inside dynamic application behavior.
+
+## UiPath Test Cloud Setup
+
+Enable UiPath publishing in `.env`:
+
+```bash
+UIPATH_TEST_CLOUD_ENABLED=true
+UIPATH_TEST_CLOUD_MODE=modern
+UIPATH_CLI_PATH=uip
+UIPATH_TEST_CLOUD_PROJECT_KEY=<your-project-key>
+UIPATH_TEST_CLOUD_TEST_SET_KEY=<your-test-set-key>
+UIPATH_TEST_CLOUD_EXECUTION_TYPE=manual
+UIPATH_TEST_CLOUD_WAIT=false
+UIPATH_TEST_CLOUD_EXTRA_ARGS="--profile <your-uipath-profile>"
+```
+
+### Modern Mode
+
+Modern mode uses the current UiPath CLI:
+
+```bash
+UIPATH_TEST_CLOUD_MODE=modern
+UIPATH_CLI_PATH=uip
+```
+
+Talos invokes the configured UiPath CLI with a Test Manager test-set execution
+command and passes the generated Talos payload through an input file.
+
+Use this mode for current UiPath Automation Cloud / Test Cloud environments.
+
+### Legacy Mode
+
+If your environment uses the older `uipcli`, configure:
+
+```bash
+UIPATH_TEST_CLOUD_MODE=legacy
+UIPATH_CLI_PATH=uipcli
+UIPATH_ORCHESTRATOR_URL=https://cloud.uipath.com/<account>/<tenant>/orchestrator_
+UIPATH_ORCHESTRATOR_TENANT=<tenant-name>
+UIPATH_TEST_CLOUD_PROJECT_KEY=<your-project-key>
+UIPATH_TEST_CLOUD_TEST_SET_KEY=<your-test-set-key>
+```
+
+### Custom Mode
+
+If your UiPath Labs tenant needs custom CLI syntax:
+
+```bash
+UIPATH_TEST_CLOUD_MODE=custom
+UIPATH_TEST_CLOUD_ARGS='tm testsets run --test-set-key {testSetKey} --input-path {inputPath}'
+```
+
+Supported placeholders include:
+
+- `{inputPath}`
+- `{payloadPath}`
+- `{junitPath}`
+- `{resultPath}`
+- `{runId}`
+- `{status}`
+- `{projectKey}`
+- `{testSetKey}`
+- `{tenant}`
+- `{orchestratorUrl}`
+
+## Important Configuration
+
+| Variable | Purpose |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string. |
+| `REDIS_URL` | Redis connection string for the run queue and live state. |
+| `OPENROUTER_API_KEY` | Recommended provider key for routing to multiple models. |
+| `OPENAI_API_KEY` | Direct OpenAI model access. |
+| `ANTHROPIC_API_KEY` | Direct Anthropic model access. |
+| `GEMINI_API_KEY` | Direct Google Gemini model access. |
+| `AGENT_MODEL` | Model used by the browser navigator. |
+| `AUXILIARY_MODEL` | Model used for planning, discovery, memory, and summaries. |
+| `REVIEW_AGENT_MODEL` | Model used for post-run review. |
+| `STAGEHAND_ENABLED` | Enables semantic element finding support. |
+| `RUN_TIMEOUT_MINUTES` | Maximum wall-clock runtime for a test. |
+| `UIPATH_TEST_CLOUD_ENABLED` | Enables UiPath Test Cloud handoff. |
+| `UIPATH_TEST_CLOUD_MODE` | `modern`, `legacy`, or `custom`. |
+| `UIPATH_CLI_PATH` | UiPath CLI executable path or command. |
+| `UIPATH_TEST_CLOUD_PROJECT_KEY` | UiPath Test Manager project key. |
+| `UIPATH_TEST_CLOUD_TEST_SET_KEY` | UiPath Test Cloud/Test Manager test set key. |
+| `UIPATH_TEST_CLOUD_WAIT` | Whether Talos waits for the UiPath execution to finish. |
+
+Model settings can also be changed in the dashboard under **Settings**.
+
+## MCP Usage
+
+Talos includes an MCP server so coding agents and MCP-compatible tools can start
+tests, inspect runs, and triage issues without leaving the development
+environment.
+
+Example MCP configuration:
 
 ```json
 {
@@ -126,123 +336,83 @@ Or add it manually to your MCP config:
     "talos": {
       "command": "npx",
       "args": ["-y", "@talosai/mcp"],
-      "env": { "TALOS_BASE_URL": "http://localhost:11111" }
+      "env": {
+        "TALOS_BASE_URL": "http://localhost:11111"
+      }
     }
   }
 }
 ```
 
-Once connected, your AI assistant can scan your app, run tests, and triage bugs inline — no context switching.
+Available tool areas include:
 
-**Available tools:** `talos_scan`, `talos_run_test`, `talos_get_bugs`, `talos_update_bug`, `talos_list_routes`, `talos_memory`, `talos_get_coverage`, and [20+ more](packages/mcp/README.md).
+- Project and environment management.
+- Test execution.
+- Run detail inspection.
+- Bug triage.
+- Memory management.
+- Coverage and discovery workflows.
 
----
-
-## UiPath Test Cloud
-
-Talos can hand off completed agentic test runs to UiPath Test Cloud so Automation Cloud remains the enterprise execution and governance layer. After the browser agent finishes, the worker writes:
-
-- `talos-run.json` with the run ID, environment, intent, steps, bugs, severity counts, video URL, and LLM metrics.
-- `uipath-input.json` with UiPath Test Manager parameter overrides, including `TalosRunPayload`, `TalosRunId`, and status/count fields.
-- `talos-junit.xml` with pass/fail evidence for tools that expect JUnit-style output.
-- UiPath CLI logs under `data/uipath-test-cloud/<runId>/`.
-
-Enable it with:
+## Development Commands
 
 ```bash
-UIPATH_TEST_CLOUD_ENABLED=true
-UIPATH_TEST_CLOUD_MODE=modern
-UIPATH_CLI_PATH=uip
-UIPATH_TEST_CLOUD_TEST_SET_KEY=<your-test-set-key> # e.g. DEMO:42
-UIPATH_TEST_CLOUD_EXECUTION_TYPE=manual
-UIPATH_TEST_CLOUD_WAIT=false
-UIPATH_TEST_CLOUD_EXTRA_ARGS="--profile <your-uipath-profile>"
-```
-
-The default `modern` mode invokes the UiPath CLI with `tm testsets run --test-set-key <key> --input-path <file>` and passes the generated Talos payload as Test Manager parameter overrides. Manual executions are submitted asynchronously by default because they remain open for human review. Set `UIPATH_TEST_CLOUD_WAIT=true` for automated test sets that should block until completion. If your UiPath Labs tenant uses the older `uipcli`, set:
-
-```bash
-UIPATH_TEST_CLOUD_MODE=legacy
-UIPATH_CLI_PATH=uipcli
-UIPATH_ORCHESTRATOR_URL=https://cloud.uipath.com/<account>/<tenant>/orchestrator_
-UIPATH_ORCHESTRATOR_TENANT=<tenant-name>
-```
-
-For lab-specific CLI syntax, use `custom` mode:
-
-```bash
-UIPATH_TEST_CLOUD_MODE=custom
-UIPATH_TEST_CLOUD_ARGS='tm testsets run --test-set-key {testSetKey} --input-path {inputPath}'
-```
-
-This is the recommended hackathon positioning for Track 3: Talos supplies the coding-agent testing layer, while UiPath Test Cloud receives the governed execution record, runs the configured test set, and keeps the process visible in Automation Cloud.
-
-For Devpost, demo, and judging materials, see [docs/uipath-agenthack-submission.md](docs/uipath-agenthack-submission.md).
-
----
-
-## Configuration
-
-| Variable | Default | Description |
-|---|---|---|
-| `DATABASE_URL` | `postgresql://talos:talos@localhost:11112/talos` | PostgreSQL connection string |
-| `OPENROUTER_API_KEY` | — | OpenRouter key (routes to all models — recommended) |
-| `OPENAI_API_KEY` | — | Direct OpenAI key |
-| `ANTHROPIC_API_KEY` | — | Direct Anthropic key |
-| `GEMINI_API_KEY` | — | Direct Google Gemini key |
-| `AGENT_MODEL` | `claude-haiku-4-5` | Model for browser navigation decisions |
-| `AUXILIARY_MODEL` | `gemini-2.5-pro` | Crawl, path planning, memory curation, summarization |
-| `REVIEW_AGENT_MODEL` | `claude-sonnet-4-6` | Post-run holistic and filmstrip screenshot analysis |
-| `STAGEHAND_ENABLED` | `true` | Enable Stagehand for semantic element finding |
-| `RUN_TIMEOUT_MINUTES` | `15` | Max wall-clock time per test run |
-| `UIPATH_TEST_CLOUD_ENABLED` | `false` | Publish completed Talos runs to UiPath Test Cloud |
-| `UIPATH_TEST_CLOUD_MODE` | `modern` | UiPath CLI mode: `modern`, `legacy`, or `custom` |
-| `UIPATH_CLI_PATH` | `uip` | UiPath CLI executable |
-| `UIPATH_TEST_CLOUD_PROJECT_KEY` | — | Optional UiPath Test Manager project key for custom/legacy modes |
-| `UIPATH_TEST_CLOUD_TEST_SET_KEY` | — | UiPath Test Cloud/Test Manager test set key |
-| `UIPATH_TEST_CLOUD_EXECUTION_TYPE` | `manual` | Test Manager execution type: `manual`, `automated`, or `mixed` |
-| `UIPATH_TEST_CLOUD_WAIT` | `false` | Whether the worker waits for the UiPath execution to finish |
-| `UIPATH_TEST_CLOUD_EXTRA_ARGS` | — | Extra CLI args such as profile, folder, or auth settings |
-
-All model settings are also configurable via the dashboard under **Settings**.
-
----
-
-## Architecture
-
-```
-packages/
-  engine/     — Core agent loop, LLM client, crawler, memory, bug triage
-  db/         — PostgreSQL storage adapter (StorageAdapter interface)
-  talos/       — CLI setup wizard (npx talosai)
-  mcp/        — Model Context Protocol server (@talosai/mcp)
-  client/     — TypeScript HTTP client SDK (@talosai/client)
-
-apps/
-  api/        — Fastify HTTP server
-  web/        — React dashboard
-  worker/     — Test run executor (BullMQ)
-```
-
-The engine is storage-agnostic via the `StorageAdapter` interface — PostgreSQL is the default, but other backends can be plugged in.
-
----
-
-## Contributing
-
-Issues and pull requests are welcome. Please open an issue to discuss large changes before starting work.
-
-```bash
-git clone https://github.com/talosai/talos
-cd talos
-npm install
-cp .env.example .env
-docker compose up postgres redis -d
 npm run dev
+npm run dev:api
+npm run dev:worker
+npm run dev:web
+npm run migrate
+npm run build
 ```
 
----
+If Playwright reports that Chromium is missing, install the browser runtime:
+
+```bash
+npx playwright install chromium
+```
+
+## Troubleshooting
+
+### A run is stuck on "launching browser"
+
+Install Playwright's browser runtime:
+
+```bash
+npx playwright install chromium
+```
+
+Then restart the worker.
+
+### A broad discovery run stalls
+
+Use a smaller controlled flow for demos and first-time validation. Broad
+discovery can hit dynamic app states that take longer to resolve.
+
+### The queue is blocked by an old run
+
+Stop the run from the dashboard. If the worker is unresponsive, restart the
+worker and verify Redis queue state before starting a new run.
+
+### UiPath handoff does not appear
+
+Check:
+
+- `UIPATH_TEST_CLOUD_ENABLED=true`
+- UiPath CLI is installed and authenticated.
+- `UIPATH_TEST_CLOUD_TEST_SET_KEY` is set.
+- The configured CLI profile can access the Test Manager project/test set.
+- `data/uipath-test-cloud/<runId>/` contains generated artifacts or CLI logs.
+
+## Hackathon Positioning
+
+Talos is a UiPath Test Cloud project because it focuses on agentic software
+testing.
+
+It shows how coding agents, browser agents, and LLM-based review can improve
+software QA while UiPath remains the enterprise control plane. The agent
+explores and validates the application, but the final value comes from turning
+that activity into governed Test Cloud evidence that a team can review,
+understand, and build on.
 
 ## License
 
-Apache 2.0 — see [LICENSE](LICENSE).
+Apache 2.0. See [LICENSE](LICENSE).

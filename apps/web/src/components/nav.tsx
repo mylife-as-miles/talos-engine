@@ -44,7 +44,7 @@ const TOOLS_ITEMS = [
 function Logo() {
   return (
     <img
-      src="/logo/talos.png"
+      src="/logo/talos-icon.svg"
       alt="Talos"
       className="h-[22px] w-[22px] flex-shrink-0 object-contain"
     />

@@ -158,7 +158,7 @@ function WelcomeSlide() {
       {/* Hero area */}
       <div className="flex flex-col items-center justify-center gap-5 px-6 pt-10 pb-8 text-center">
         <img
-          src="/logo/talos.png"
+          src="/logo/talos-icon.svg"
           alt="Talos"
           className="h-16 w-16 rounded-2xl"
           style={{ imageRendering: "pixelated" }}

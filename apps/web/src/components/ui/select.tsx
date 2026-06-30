@@ -5,11 +5,11 @@ import { cn } from "@/lib/utils";
 export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {}
 
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(({ className, children, ...props }, ref) => (
-  <div className="relative">
+  <div className="relative min-w-0 w-full">
     <select
       ref={ref}
       className={cn(
-        "liquid-glass flex h-8 w-full appearance-none rounded-md px-3 pr-8 text-[13px] text-foreground transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 focus-visible:border-primary/40 disabled:cursor-not-allowed disabled:opacity-50",
+        "liquid-glass flex h-8 w-full min-w-0 appearance-none truncate rounded-md px-3 pr-8 text-[13px] text-foreground transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/20 focus-visible:border-primary/40 disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
       {...props}

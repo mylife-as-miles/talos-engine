@@ -782,6 +782,11 @@ function modelIdsEquivalent(a: string, b: string): boolean {
   return normalizeModelIdForCompare(a) === normalizeModelIdForCompare(b);
 }
 
+function compactMissingKeyLabel(reason: string): string {
+  if (reason.includes("OpenRouter") && !reason.includes(" or ")) return "Needs OpenRouter";
+  return reason;
+}
+
 function ModelSlotCard({
   modelKey,
   label,
@@ -884,6 +889,8 @@ function ModelSlotCard({
 
   const presetSelectValue = isPresetCurrent ? presetMatchForCurrent : "";
   const displayModelLabel = currentOption?.label ?? (current ? current : "Default");
+  const currentMissingKey = llmKeys && current ? modelMissingKeyLabel(current, llmKeys) : null;
+  const hasKeyGatedPresets = Boolean(llmKeys && options.some((opt) => !optionSelectable(opt.value)));
 
   return (
     <div className="p-4 space-y-3">
@@ -926,6 +933,11 @@ function ModelSlotCard({
               {!isPresetCurrent && current && (
                 <p className="text-[10px] font-mono text-muted-foreground/60 truncate">{current}</p>
               )}
+              {currentMissingKey && (
+                <p className="text-[10px] text-warning truncate">
+                  {compactMissingKeyLabel(currentMissingKey)} to run this model
+                </p>
+              )}
             </div>
             {saving && (
               <div className="h-3.5 w-3.5 rounded-full border-2 border-primary/30 border-t-primary animate-spin shrink-0" />
@@ -944,13 +956,18 @@ function ModelSlotCard({
               const sel = optionSelectable(opt.value);
               const missing = llmKeys && !sel && opt.value !== current ? modelMissingKeyLabel(opt.value, llmKeys) : null;
               return (
-                <option key={opt.value} value={opt.value} disabled={!sel}>
+                <option key={opt.value} value={opt.value} title={missing ?? opt.value}>
                   {opt.label}{modelIdsEquivalent(opt.value, defaultValue) ? " (default)" : ""}
                   {missing ? ` — ${missing}` : ""}
                 </option>
               );
             })}
           </Select>
+          {hasKeyGatedPresets && (
+            <p className="text-[10px] text-muted-foreground/70 leading-snug">
+              You can choose any preset now. Runs still need that provider key or OpenRouter.
+            </p>
+          )}
 
           <button
             type="button"

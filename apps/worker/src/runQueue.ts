@@ -280,8 +280,9 @@ export async function createRunWorker(
         const stopPoller = startRunStopPoller(redis, data.runId);
 
         // Buffers for incremental Postgres persistence every INCREMENTAL_FLUSH_EVERY items.
+        // Flush every item so short/stuck runs still show progress in Run Detail.
         // Declared outside try/catch so catch block can flush remaining items on error.
-        const INCREMENTAL_FLUSH_EVERY = 10;
+        const INCREMENTAL_FLUSH_EVERY = 1;
         const stepBuffer: any[] = [];
         const llmCallBuffer: any[] = [];
         const activityBuffer: any[] = [];
