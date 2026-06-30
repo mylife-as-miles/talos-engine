@@ -175,6 +175,8 @@ UIPATH_TEST_CLOUD_ARGS='tm testsets run --project-key {projectKey} --test-set-ke
 
 This is the recommended hackathon positioning for Track 3: Talos supplies the coding-agent testing layer, while UiPath Test Cloud receives the governed execution record, runs the configured test set, and keeps the process visible in Automation Cloud.
 
+For Devpost, demo, and judging materials, see [docs/uipath-agenthack-submission.md](docs/uipath-agenthack-submission.md).
+
 ---
 
 ## Configuration
