@@ -69,12 +69,24 @@ flowchart LR
 - Request UiPath Labs access for the team representative.
 - Create or identify a UiPath Test Cloud / Test Manager project.
 - Create or identify a test set for Talos agentic browser runs.
-- Install and authenticate the UiPath CLI in the runtime environment.
+- Install the UiPath CLI: `npm install -g @uipath/cli`.
+- Install the Test Manager CLI tool: `uip tools install @uipath/test-manager-tool`.
+- Authenticate the UiPath CLI in the runtime environment with `uip login`.
 - Configure `.env` with `UIPATH_TEST_CLOUD_ENABLED=true`.
-- Set `UIPATH_TEST_CLOUD_PROJECT_KEY` and `UIPATH_TEST_CLOUD_TEST_SET_KEY`.
+- Set `UIPATH_TEST_CLOUD_TEST_SET_KEY` to the Test Manager test set key, for example `DEMO:42`.
+- Optionally set `UIPATH_TEST_CLOUD_PROJECT_KEY` for custom or legacy commands.
 - Run `npm run build --workspace=apps/worker` after configuration changes.
 - Run one Talos test and confirm `data/uipath-test-cloud/<runId>/` contains JSON/JUnit artifacts.
 - Confirm the UiPath Test Cloud execution is visible in Automation Cloud.
+
+Current lab setup:
+
+- Organization: `startrz`
+- Tenant: `DefaultTenant`
+- Test Manager project: `TALOS` / `Talos Agentic TestOps`
+- Test set: `TALOS:1` / `Talos Agentic Browser Runs`
+- Seed test case: `TALOS:2` / `Talos agentic browser validation`
+- Smoke execution verified: `uip tm testsets run --test-set-key TALOS:1 --execution-type manual --input-path data/uipath-test-cloud/manual-smoke/uipath-input.json --output json`
 
 ## Devpost Description Draft
 

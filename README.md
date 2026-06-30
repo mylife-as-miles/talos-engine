@@ -143,6 +143,7 @@ Once connected, your AI assistant can scan your app, run tests, and triage bugs 
 Talos can hand off completed agentic test runs to UiPath Test Cloud so Automation Cloud remains the enterprise execution and governance layer. After the browser agent finishes, the worker writes:
 
 - `talos-run.json` with the run ID, environment, intent, steps, bugs, severity counts, video URL, and LLM metrics.
+- `uipath-input.json` with UiPath Test Manager parameter overrides, including `TalosRunPayload`, `TalosRunId`, and status/count fields.
 - `talos-junit.xml` with pass/fail evidence for tools that expect JUnit-style output.
 - UiPath CLI logs under `data/uipath-test-cloud/<runId>/`.
 
@@ -152,12 +153,13 @@ Enable it with:
 UIPATH_TEST_CLOUD_ENABLED=true
 UIPATH_TEST_CLOUD_MODE=modern
 UIPATH_CLI_PATH=uip
-UIPATH_TEST_CLOUD_PROJECT_KEY=<your-test-manager-project-key>
-UIPATH_TEST_CLOUD_TEST_SET_KEY=<your-test-set-key>
+UIPATH_TEST_CLOUD_TEST_SET_KEY=<your-test-set-key> # e.g. DEMO:42
+UIPATH_TEST_CLOUD_EXECUTION_TYPE=manual
+UIPATH_TEST_CLOUD_WAIT=false
 UIPATH_TEST_CLOUD_EXTRA_ARGS="--profile <your-uipath-profile>"
 ```
 
-The default `modern` mode invokes the UiPath CLI with `tm testsets run` and passes the generated Talos payload as input. If your UiPath Labs tenant uses the older `uipcli`, set:
+The default `modern` mode invokes the UiPath CLI with `tm testsets run --test-set-key <key> --input-path <file>` and passes the generated Talos payload as Test Manager parameter overrides. Manual executions are submitted asynchronously by default because they remain open for human review. Set `UIPATH_TEST_CLOUD_WAIT=true` for automated test sets that should block until completion. If your UiPath Labs tenant uses the older `uipcli`, set:
 
 ```bash
 UIPATH_TEST_CLOUD_MODE=legacy
@@ -170,7 +172,7 @@ For lab-specific CLI syntax, use `custom` mode:
 
 ```bash
 UIPATH_TEST_CLOUD_MODE=custom
-UIPATH_TEST_CLOUD_ARGS='tm testsets run --project-key {projectKey} --test-set-key {testSetKey} --input-path {payloadPath}'
+UIPATH_TEST_CLOUD_ARGS='tm testsets run --test-set-key {testSetKey} --input-path {inputPath}'
 ```
 
 This is the recommended hackathon positioning for Track 3: Talos supplies the coding-agent testing layer, while UiPath Test Cloud receives the governed execution record, runs the configured test set, and keeps the process visible in Automation Cloud.
@@ -196,8 +198,10 @@ For Devpost, demo, and judging materials, see [docs/uipath-agenthack-submission.
 | `UIPATH_TEST_CLOUD_ENABLED` | `false` | Publish completed Talos runs to UiPath Test Cloud |
 | `UIPATH_TEST_CLOUD_MODE` | `modern` | UiPath CLI mode: `modern`, `legacy`, or `custom` |
 | `UIPATH_CLI_PATH` | `uip` | UiPath CLI executable |
-| `UIPATH_TEST_CLOUD_PROJECT_KEY` | — | UiPath Test Manager project key |
+| `UIPATH_TEST_CLOUD_PROJECT_KEY` | — | Optional UiPath Test Manager project key for custom/legacy modes |
 | `UIPATH_TEST_CLOUD_TEST_SET_KEY` | — | UiPath Test Cloud/Test Manager test set key |
+| `UIPATH_TEST_CLOUD_EXECUTION_TYPE` | `manual` | Test Manager execution type: `manual`, `automated`, or `mixed` |
+| `UIPATH_TEST_CLOUD_WAIT` | `false` | Whether the worker waits for the UiPath execution to finish |
 | `UIPATH_TEST_CLOUD_EXTRA_ARGS` | — | Extra CLI args such as profile, folder, or auth settings |
 
 All model settings are also configurable via the dashboard under **Settings**.

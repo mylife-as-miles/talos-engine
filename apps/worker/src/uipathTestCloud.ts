@@ -39,6 +39,8 @@ type UiPathConfig = {
   tenant: string;
   projectKey: string;
   testSetKey: string;
+  executionType: string;
+  waitForCompletion: boolean;
   timeoutSeconds: number;
   extraArgs: string[];
   customArgs: string[];
@@ -58,10 +60,13 @@ export async function publishToUiPathTestCloud(
   fs.mkdirSync(artifactsDir, { recursive: true });
 
   const payloadPath = path.join(artifactsDir, "talos-run.json");
+  const inputPath = path.join(artifactsDir, "uipath-input.json");
   const junitPath = path.join(artifactsDir, "talos-junit.xml");
   const resultPath = path.join(artifactsDir, "uipath-result.json");
 
-  fs.writeFileSync(payloadPath, JSON.stringify(buildPayload(input), null, 2));
+  const payload = buildPayload(input);
+  fs.writeFileSync(payloadPath, JSON.stringify(payload, null, 2));
+  fs.writeFileSync(inputPath, JSON.stringify(buildUiPathInput(payload), null, 2));
   fs.writeFileSync(junitPath, buildJunitXml(input));
 
   const validationError = validateConfig(config);
@@ -75,6 +80,7 @@ export async function publishToUiPathTestCloud(
   }
 
   const args = buildCliArgs(config, {
+    inputPath,
     payloadPath,
     junitPath,
     resultPath,
@@ -120,6 +126,8 @@ function readConfig(): UiPathConfig {
     tenant: process.env.UIPATH_ORCHESTRATOR_TENANT || "",
     projectKey: process.env.UIPATH_TEST_CLOUD_PROJECT_KEY || "",
     testSetKey: process.env.UIPATH_TEST_CLOUD_TEST_SET_KEY || "",
+    executionType: process.env.UIPATH_TEST_CLOUD_EXECUTION_TYPE || "manual",
+    waitForCompletion: process.env.UIPATH_TEST_CLOUD_WAIT === "true",
     timeoutSeconds: Number(process.env.UIPATH_TEST_CLOUD_TIMEOUT_SECONDS || 600),
     extraArgs: splitArgs(process.env.UIPATH_TEST_CLOUD_EXTRA_ARGS || ""),
     customArgs: splitArgs(process.env.UIPATH_TEST_CLOUD_ARGS || ""),
@@ -135,7 +143,6 @@ function validateConfig(config: UiPathConfig): string | null {
   if (config.mode === "custom") {
     return config.customArgs.length > 0 ? null : "UIPATH_TEST_CLOUD_ARGS is required in custom mode";
   }
-  if (!config.projectKey) return "UIPATH_TEST_CLOUD_PROJECT_KEY is required";
   if (!config.testSetKey) return "UIPATH_TEST_CLOUD_TEST_SET_KEY is required";
   if (config.mode === "legacy" && (!config.orchestratorUrl || !config.tenant)) {
     return "UIPATH_ORCHESTRATOR_URL and UIPATH_ORCHESTRATOR_TENANT are required in legacy mode";
@@ -146,6 +153,7 @@ function validateConfig(config: UiPathConfig): string | null {
 function buildCliArgs(
   config: UiPathConfig,
   context: {
+    inputPath: string;
     payloadPath: string;
     junitPath: string;
     resultPath: string;
@@ -166,8 +174,10 @@ function buildCliArgs(
       config.projectKey,
       "--testsetkey",
       config.testSetKey,
+      "--execution-type",
+      config.executionType,
       "--input_path",
-      context.payloadPath,
+      context.inputPath,
       "--result_path",
       context.resultPath,
       "--timeout",
@@ -180,14 +190,15 @@ function buildCliArgs(
     "tm",
     "testsets",
     "run",
-    "--project-key",
-    config.projectKey,
     "--test-set-key",
     config.testSetKey,
+    "--execution-type",
+    config.executionType,
     "--input-path",
-    context.payloadPath,
+    context.inputPath,
     "--output",
     "json",
+    ...(config.waitForCompletion ? ["--wait", "--timeout", String(config.timeoutSeconds)] : []),
     ...config.extraArgs,
   ];
 }
@@ -196,6 +207,7 @@ function replacePlaceholders(
   value: string,
   config: UiPathConfig,
   context: {
+    inputPath: string;
     payloadPath: string;
     junitPath: string;
     resultPath: string;
@@ -204,6 +216,7 @@ function replacePlaceholders(
 ): string {
   return value
     .replaceAll("{payloadPath}", context.payloadPath)
+    .replaceAll("{inputPath}", context.inputPath)
     .replaceAll("{junitPath}", context.junitPath)
     .replaceAll("{resultPath}", context.resultPath)
     .replaceAll("{runId}", context.input.runId)
@@ -212,6 +225,36 @@ function replacePlaceholders(
     .replaceAll("{testSetKey}", config.testSetKey)
     .replaceAll("{tenant}", config.tenant)
     .replaceAll("{orchestratorUrl}", config.orchestratorUrl);
+}
+
+function buildUiPathInput(payload: ReturnType<typeof buildPayload>) {
+  return [
+    {
+      name: "TalosRunPayload",
+      type: "String",
+      value: JSON.stringify(JSON.stringify(payload)),
+    },
+    {
+      name: "TalosRunId",
+      type: "String",
+      value: JSON.stringify(payload.runId),
+    },
+    {
+      name: "TalosStatus",
+      type: "String",
+      value: JSON.stringify(payload.status),
+    },
+    {
+      name: "TalosBugCount",
+      type: "Int32",
+      value: String(payload.metrics.bugCount),
+    },
+    {
+      name: "TalosHighSeverityBugCount",
+      type: "Int32",
+      value: String(payload.metrics.highSeverityBugCount),
+    },
+  ];
 }
 
 function buildPayload(input: UiPathTestCloudPublishInput) {
