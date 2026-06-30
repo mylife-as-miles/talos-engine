@@ -1,0 +1,201 @@
+{"kind":"deck","id":"pr/3m0rki","name":"Deck"}
+{"kind":"layout","layoutId":"db879695-50a8-4b75-bf68-72146494143d","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"e134dddc-5492-4f4f-9a0a-5f3596c7090e","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/fa9p91","slide":1,"title":"UiPath AgentHack | Track 3: Test Cloud","textShapes":8}
+{"kind":"textbox","id":"sh/kf6dcbul","slide":1,"text":"UiPath AgentHack | Track 3: Test Cloud","textPreview":"UiPath AgentHack | Track 3: Test Cloud","textChars":38,"textLines":1,"bbox":[64,66,560,28]}
+{"kind":"textbox","id":"sh/vu9knih4","slide":1,"text":"Talos Test\nCloud Agent","textPreview":"Talos Test | Cloud Agent","textChars":22,"textLines":2,"bbox":[64,142,710,170]}
+{"kind":"textbox","id":"sh/29gr2p8n","slide":1,"text":"Agentic browser QA that turns exploratory AI runs into governed UiPath Test Cloud evidence.","textPreview":"Agentic browser QA that turns exploratory AI runs into governed UiPath Test Cloud evidence.","textChars":91,"textLines":1,"bbox":[64,338,720,82]}
+{"kind":"shape","id":"sh/d8bat47y","slide":1,"bbox":[852,102,302,386]}
+{"kind":"textbox","id":"sh/knih4byh","slide":1,"text":"AGENT","textPreview":"AGENT","textChars":5,"textLines":1,"bbox":[894,146,210,32]}
+{"kind":"textbox","id":"sh/v6psfil0","slide":1,"text":"observes\nacts\nrecords","textPreview":"observes | acts | records","textChars":21,"textLines":3,"bbox":[894,204,210,150]}
+{"kind":"shape","id":"sh/2lszqtcj","slide":1,"bbox":[894,388,210,2]}
+{"kind":"textbox","id":"sh/dcbulwva","slide":1,"text":"UiPath governs the result","textPreview":"UiPath governs the result","textChars":25,"textLines":1,"bbox":[894,416,220,48]}
+{"kind":"shape","id":"sh/kre1w7mp","slide":1,"bbox":[64,666,1152,2]}
+{"kind":"textbox","id":"sh/6psfil0r","slide":1,"text":"Talos Test Cloud Agent","textPreview":"Talos Test Cloud Agent","textChars":22,"textLines":1,"bbox":[64,676,360,24]}
+{"kind":"textbox","id":"sh/val87ed8","slide":1,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[1168,676,48,24]}
+{"kind":"notes","id":"nt/fa9p91","slide":1,"text":""}
+{"kind":"slide","id":"sl/y4z8fv","slide":2,"title":"The testing gap","textShapes":14}
+{"kind":"textbox","id":"sh/vmtwra5g","slide":2,"text":"The testing gap","textPreview":"The testing gap","textChars":15,"textLines":1,"bbox":[64,56,760,58]}
+{"kind":"textbox","id":"sh/o7qpg3ex","slide":2,"text":"Teams can ship faster than manual QA and scripted regression suites can adapt. AI agents can explore quickly, but raw browser automation is not enterprise-ready unless it produces evidence, governance, and reviewable outcomes.","textPreview":"Teams can ship faster than manual QA and scripted regression suites can adapt. AI agents can explore quickly, but raw browser automation ...","textChars":226,"textLines":1,"bbox":[64,126,960,80]}
+{"kind":"shape","id":"sh/dsji5sne","slide":2,"bbox":[64,258,342,252]}
+{"kind":"textbox","id":"sh/6dcbulwv","slide":2,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[92,288,70,34]}
+{"kind":"textbox","id":"sh/vy90je9c","slide":2,"text":"Manual QA falls behind","textPreview":"Manual QA falls behind","textChars":22,"textLines":1,"bbox":[92,338,284,58]}
+{"kind":"textbox","id":"sh/oj2t83it","slide":2,"text":"Fast releases create more flows than testers can manually inspect.","textPreview":"Fast releases create more flows than testers can manually inspect.","textChars":66,"textLines":1,"bbox":[92,414,278,72]}
+{"kind":"shape","id":"sh/d4vmtwra","slide":2,"bbox":[448,258,342,252]}
+{"kind":"textbox","id":"sh/6hcrmhk3","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[476,288,70,34]}
+{"kind":"textbox","id":"sh/z25kb6xk","slide":2,"text":"Scripts are brittle","textPreview":"Scripts are brittle","textChars":19,"textLines":1,"bbox":[476,338,284,58]}
+{"kind":"textbox","id":"sh/vy90je9c","slide":2,"text":"Selectors, dynamic UI, and auth-heavy apps make maintenance expensive.","textPreview":"Selectors, dynamic UI, and auth-heavy apps make maintenance expensive.","textChars":70,"textLines":1,"bbox":[476,414,278,72]}
+{"kind":"shape","id":"sh/6dcbulwv","slide":2,"bbox":[832,258,342,252]}
+{"kind":"textbox","id":"sh/d4vmtwra","slide":2,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[860,288,70,34]}
+{"kind":"textbox","id":"sh/oj2t83it","slide":2,"text":"AI needs governance","textPreview":"AI needs governance","textChars":19,"textLines":1,"bbox":[860,338,284,58]}
+{"kind":"textbox","id":"sh/vmtwra5g","slide":2,"text":"A browser agent is useful only when its work becomes traceable test evidence.","textPreview":"A browser agent is useful only when its work becomes traceable test evidence.","textChars":77,"textLines":1,"bbox":[860,414,278,72]}
+{"kind":"textbox","id":"sh/61032lsz","slide":2,"text":"Talos was built to connect adaptive testing with UiPath-grade control.","textPreview":"Talos was built to connect adaptive testing with UiPath-grade control.","textChars":70,"textLines":1,"bbox":[64,558,900,34]}
+{"kind":"shape","id":"sh/dsji5sne","slide":2,"bbox":[64,666,1152,2]}
+{"kind":"textbox","id":"sh/o7qpg3ex","slide":2,"text":"Talos Test Cloud Agent","textPreview":"Talos Test Cloud Agent","textChars":22,"textLines":1,"bbox":[64,676,360,24]}
+{"kind":"textbox","id":"sh/vahoza1g","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1168,676,48,24]}
+{"kind":"notes","id":"nt/y4z8fv","slide":2,"text":""}
+{"kind":"slide","id":"sl/jdbe3l","slide":3,"title":"What Talos does","textShapes":14}
+{"kind":"textbox","id":"sh/qpg3ex0n","slide":3,"text":"What Talos does","textPreview":"What Talos does","textChars":15,"textLines":1,"bbox":[64,56,760,58]}
+{"kind":"textbox","id":"sh/xczed8v6","slide":3,"text":"Talos converts a natural-language test goal into a browser run, captures evidence as the agent works, and prepares the outcome for UiPath Test Cloud.","textPreview":"Talos converts a natural-language test goal into a browser run, captures evidence as the agent works, and prepares the outcome for UiPath...","textChars":149,"textLines":1,"bbox":[64,126,930,70]}
+{"kind":"textbox","id":"sh/8v6psfil","slide":3,"text":"Intent","textPreview":"Intent","textChars":6,"textLines":1,"bbox":[64,236,190,34]}
+{"kind":"textbox","id":"sh/fyxobm58","slide":3,"text":"Tester describes the flow in plain language.","textPreview":"Tester describes the flow in plain language.","textChars":44,"textLines":1,"bbox":[292,238,760,40]}
+{"kind":"shape","id":"sh/qd4vmtwr","slide":3,"bbox":[64,298,1000,2]}
+{"kind":"textbox","id":"sh/x4nap4r6","slide":3,"text":"Browser agent","textPreview":"Browser agent","textChars":13,"textLines":1,"bbox":[64,324,190,34]}
+{"kind":"textbox","id":"sh/8jqh0fep","slide":3,"text":"Talos logs in, navigates, observes, and acts.","textPreview":"Talos logs in, navigates, observes, and acts.","textChars":45,"textLines":1,"bbox":[292,326,760,40]}
+{"kind":"shape","id":"sh/fmlkjm1c","slide":3,"bbox":[64,386,1000,2]}
+{"kind":"textbox","id":"sh/q1orytsv","slide":3,"text":"Evidence","textPreview":"Evidence","textChars":8,"textLines":1,"bbox":[64,412,190,34]}
+{"kind":"textbox","id":"sh/4nap4r65","slide":3,"text":"Steps, screenshots, LLM calls, cost, and issues are captured.","textPreview":"Steps, screenshots, LLM calls, cost, and issues are captured.","textChars":61,"textLines":1,"bbox":[292,414,760,40]}
+{"kind":"shape","id":"sh/t83itgfm","slide":3,"bbox":[64,474,1000,2]}
+{"kind":"textbox","id":"sh/mhk3q5o7","slide":3,"text":"UiPath","textPreview":"UiPath","textChars":6,"textLines":1,"bbox":[64,500,190,34]}
+{"kind":"textbox","id":"sh/b2hwfyxo","slide":3,"text":"The result becomes Test Cloud-ready execution evidence.","textPreview":"The result becomes Test Cloud-ready execution evidence.","textChars":55,"textLines":1,"bbox":[292,502,760,40]}
+{"kind":"shape","id":"sh/4byhgn29","slide":3,"bbox":[940,238,214,250]}
+{"kind":"textbox","id":"sh/twra5gbq","slide":3,"text":"Outcome","textPreview":"Outcome","textChars":7,"textLines":1,"bbox":[972,272,150,30]}
+{"kind":"textbox","id":"sh/m58z25kb","slide":3,"text":"AI exploration becomes governed QA signal.","textPreview":"AI exploration becomes governed QA signal.","textChars":42,"textLines":1,"bbox":[972,322,150,120]}
+{"kind":"shape","id":"sh/bq1oryts","slide":3,"bbox":[64,666,1152,2]}
+{"kind":"textbox","id":"sh/47y1kre1","slide":3,"text":"Talos Test Cloud Agent","textPreview":"Talos Test Cloud Agent","textChars":22,"textLines":1,"bbox":[64,676,360,24]}
+{"kind":"textbox","id":"sh/tsvu9kni","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1168,676,48,24]}
+{"kind":"notes","id":"nt/jdbe3l","slide":3,"text":""}
+{"kind":"slide","id":"sl/kj9dff","slide":4,"title":"Why UiPath is central","textShapes":10}
+{"kind":"textbox","id":"sh/ex0nuxc3","slide":4,"text":"Why UiPath is central","textPreview":"Why UiPath is central","textChars":21,"textLines":1,"bbox":[64,56,840,58]}
+{"kind":"textbox","id":"sh/loj2t83i","slide":4,"text":"Talos is not a replacement for enterprise test management. It is an agentic testing layer that feeds structured evidence into UiPath Test Cloud.","textPreview":"Talos is not a replacement for enterprise test management. It is an agentic testing layer that feeds structured evidence into UiPath Test...","textChars":144,"textLines":1,"bbox":[64,126,930,70]}
+{"kind":"shape","id":"sh/w3m94fu1","slide":4,"bbox":[64,245,460,250]}
+{"kind":"textbox","id":"sh/3q5o7qpg","slide":4,"text":"Talos","textPreview":"Talos","textChars":5,"textLines":1,"bbox":[98,282,380,38]}
+{"kind":"textbox","id":"sh/e9cvixcz","slide":4,"text":"Explores real applications\nCaptures evidence\nSurfaces issues","textPreview":"Explores real applications | Captures evidence | Surfaces issues","textChars":60,"textLines":3,"bbox":[98,350,360,110]}
+{"kind":"shape","id":"sh/lwval87e","slide":4,"bbox":[692,245,460,250]}
+{"kind":"textbox","id":"sh/wb2hwfyx","slide":4,"text":"UiPath Test Cloud","textPreview":"UiPath Test Cloud","textChars":17,"textLines":1,"bbox":[726,282,380,38]}
+{"kind":"textbox","id":"sh/32lszqtc","slide":4,"text":"Owns test sets\nGoverns execution\nKeeps human review visible","textPreview":"Owns test sets | Governs execution | Keeps human review visible","textChars":59,"textLines":3,"bbox":[726,350,360,110]}
+{"kind":"textbox","id":"sh/ahoza1gv","slide":4,"text":"+","textPreview":"+","textChars":1,"textLines":1,"bbox":[600,330,60,60]}
+{"kind":"textbox","id":"sh/cj6tovah","slide":4,"text":"Together: adaptive AI testing with enterprise governance.","textPreview":"Together: adaptive AI testing with enterprise governance.","textChars":57,"textLines":1,"bbox":[64,550,990,38]}
+{"kind":"shape","id":"sh/54zidony","slide":4,"bbox":[64,666,1152,2]}
+{"kind":"textbox","id":"sh/udg7adsj","slide":4,"text":"Talos Test Cloud Agent","textPreview":"Talos Test Cloud Agent","textChars":22,"textLines":1,"bbox":[64,676,360,24]}
+{"kind":"textbox","id":"sh/nyd0z610","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1168,676,48,24]}
+{"kind":"notes","id":"nt/kj9dff","slide":4,"text":""}
+{"kind":"slide","id":"sl/fdn5sa","slide":5,"title":"Architecture","textShapes":12}
+{"kind":"textbox","id":"sh/36hcrmhk","slide":5,"text":"Architecture","textPreview":"Architecture","textChars":12,"textLines":1,"bbox":[64,56,760,58]}
+{"kind":"textbox","id":"sh/wra5gbq1","slide":5,"text":"A production-shaped flow: UI, API, queue, worker, browser agent, data, and UiPath handoff.","textPreview":"A production-shaped flow: UI, API, queue, worker, browser agent, data, and UiPath handoff.","textChars":90,"textLines":1,"bbox":[64,126,950,42]}
+{"kind":"shape","id":"sh/lc7u54zi","slide":5,"bbox":[70,250,170,92]}
+{"kind":"textbox","id":"sh/ed8bat47","slide":5,"text":"Talos Web UI","textPreview":"Talos Web UI","textChars":12,"textLines":1,"bbox":[84,275,142,42]}
+{"kind":"shape","id":"sh/7u54zido","slide":5,"bbox":[300,250,170,92]}
+{"kind":"textbox","id":"sh/wfyxobm5","slide":5,"text":"API Server","textPreview":"API Server","textChars":10,"textLines":1,"bbox":[314,275,142,42]}
+{"kind":"shape","id":"sh/l0rqd4vm","slide":5,"bbox":[530,250,170,92]}
+{"kind":"textbox","id":"sh/e1w7mp0b","slide":5,"text":"Redis Queue","textPreview":"Redis Queue","textChars":11,"textLines":1,"bbox":[544,275,142,42]}
+{"kind":"shape","id":"sh/7mp0bi9s","slide":5,"bbox":[760,250,170,92]}
+{"kind":"textbox","id":"sh/zed8v6ps","slide":5,"text":"Worker","textPreview":"Worker","textChars":6,"textLines":1,"bbox":[774,275,142,42]}
+{"kind":"shape","id":"sh/6xkf6dcb","slide":5,"bbox":[990,250,170,92]}
+{"kind":"textbox","id":"sh/hk3q5o7q","slide":5,"text":"Browser Agent","textPreview":"Browser Agent","textChars":13,"textLines":1,"bbox":[1004,275,142,42]}
+{"kind":"shape","id":"sh/oza1gvy9","slide":5,"bbox":[300,430,170,92]}
+{"kind":"textbox","id":"sh/zqtcj6to","slide":5,"text":"PostgreSQL\nRun Evidence","textPreview":"PostgreSQL | Run Evidence","textChars":23,"textLines":2,"bbox":[314,455,142,42]}
+{"kind":"shape","id":"sh/65wjudg7","slide":5,"bbox":[740,430,210,92]}
+{"kind":"textbox","id":"sh/hwfyxobm","slide":5,"text":"UiPath Test Cloud\nTest Manager","textPreview":"UiPath Test Cloud | Test Manager","textChars":30,"textLines":2,"bbox":[754,455,182,42]}
+{"kind":"shape","id":"sh/obm58z25","slide":5,"bbox":[240,296,60,2]}
+{"kind":"shape","id":"sh/zupwb2hw","slide":5,"bbox":[470,296,60,2]}
+{"kind":"shape","id":"sh/a9w3m94f","slide":5,"bbox":[700,296,60,2]}
+{"kind":"shape","id":"sh/eloj2t83","slide":5,"bbox":[930,296,60,2]}
+{"kind":"shape","id":"sh/36hcrmhk","slide":5,"bbox":[385,342,2,2]}
+{"kind":"shape","id":"sh/wra5gbq1","slide":5,"bbox":[845,342,2,2]}
+{"kind":"shape","id":"sh/lc7u54zi","slide":5,"bbox":[845,342,2,88]}
+{"kind":"shape","id":"sh/ed8bat47","slide":5,"bbox":[385,342,2,88]}
+{"kind":"textbox","id":"sh/7u54zido","slide":5,"text":"Every agent action becomes inspectable testing evidence.","textPreview":"Every agent action becomes inspectable testing evidence.","textChars":56,"textLines":1,"bbox":[64,570,900,34]}
+{"kind":"shape","id":"sh/wfyxobm5","slide":5,"bbox":[64,666,1152,2]}
+{"kind":"textbox","id":"sh/l0rqd4vm","slide":5,"text":"Talos Test Cloud Agent","textPreview":"Talos Test Cloud Agent","textChars":22,"textLines":1,"bbox":[64,676,360,24]}
+{"kind":"textbox","id":"sh/e1w7mp0b","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1168,676,48,24]}
+{"kind":"notes","id":"nt/fdn5sa","slide":5,"text":""}
+{"kind":"slide","id":"sl/t14n4x","slide":6,"title":"End-to-end workflow","textShapes":19}
+{"kind":"textbox","id":"sh/x0nuxc3y","slide":6,"text":"End-to-end workflow","textPreview":"End-to-end workflow","textChars":19,"textLines":1,"bbox":[64,56,820,58]}
+{"kind":"textbox","id":"sh/m94fu18j","slide":6,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[64,170,60,54]}
+{"kind":"shape","id":"sh/fu18jqh0","slide":6,"bbox":[132,197,135,2]}
+{"kind":"textbox","id":"sh/83itgfml","slide":6,"text":"Define intent","textPreview":"Define intent","textChars":13,"textLines":1,"bbox":[64,260,180,34]}
+{"kind":"textbox","id":"sh/xobm58z2","slide":6,"text":"Describe the flow in plain language.","textPreview":"Describe the flow in plain language.","textChars":36,"textLines":1,"bbox":[64,315,178,90]}
+{"kind":"textbox","id":"sh/qxs72x4n","slide":6,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[289,170,60,54]}
+{"kind":"shape","id":"sh/fil0rqd4","slide":6,"bbox":[357,197,135,2]}
+{"kind":"textbox","id":"sh/4zidonyd","slide":6,"text":"Run agent","textPreview":"Run agent","textChars":9,"textLines":1,"bbox":[289,260,180,34]}
+{"kind":"textbox","id":"sh/xkf6dcbu","slide":6,"text":"Browser agent authenticates and navigates.","textPreview":"Browser agent authenticates and navigates.","textChars":42,"textLines":1,"bbox":[289,315,178,90]}
+{"kind":"textbox","id":"sh/1kre1w7m","slide":6,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[514,170,60,54]}
+{"kind":"shape","id":"sh/c3ylc7u5","slide":6,"bbox":[582,197,135,2]}
+{"kind":"textbox","id":"sh/ji5snelo","slide":6,"text":"Capture evidence","textPreview":"Capture evidence","textChars":16,"textLines":1,"bbox":[514,260,180,34]}
+{"kind":"textbox","id":"sh/uxc3ylc7","slide":6,"text":"Steps, observations, screenshots, and calls are saved.","textPreview":"Steps, observations, screenshots, and calls are saved.","textChars":54,"textLines":1,"bbox":[514,315,178,90]}
+{"kind":"textbox","id":"sh/1cfa9w3m","slide":6,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[739,170,60,54]}
+{"kind":"shape","id":"sh/crmhk3q5","slide":6,"bbox":[807,197,135,2]}
+{"kind":"textbox","id":"sh/j6tovaho","slide":6,"text":"Review","textPreview":"Review","textChars":6,"textLines":1,"bbox":[739,260,180,34]}
+{"kind":"textbox","id":"sh/ulwval87","slide":6,"text":"Human checks what happened before trusting the result.","textPreview":"Human checks what happened before trusting the result.","textChars":54,"textLines":1,"bbox":[739,315,178,90]}
+{"kind":"textbox","id":"sh/18jqh0fe","slide":6,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[964,170,60,54]}
+{"kind":"shape","id":"sh/8nqxs72x","slide":6,"bbox":[1032,197,135,2]}
+{"kind":"textbox","id":"sh/oj2t83it","slide":6,"text":"Hand off","textPreview":"Hand off","textChars":8,"textLines":1,"bbox":[964,260,180,34]}
+{"kind":"textbox","id":"sh/d4vmtwra","slide":6,"text":"Artifacts are prepared for UiPath Test Cloud.","textPreview":"Artifacts are prepared for UiPath Test Cloud.","textChars":45,"textLines":1,"bbox":[964,315,178,90]}
+{"kind":"shape","id":"sh/6dcbulwv","slide":6,"bbox":[156,498,900,88]}
+{"kind":"textbox","id":"sh/vy90je9c","slide":6,"text":"Human review stays in control of release-impacting decisions.","textPreview":"Human review stays in control of release-impacting decisions.","textChars":61,"textLines":1,"bbox":[196,528,820,34]}
+{"kind":"shape","id":"sh/o7qpg3ex","slide":6,"bbox":[64,666,1152,2]}
+{"kind":"textbox","id":"sh/dsji5sne","slide":6,"text":"Talos Test Cloud Agent","textPreview":"Talos Test Cloud Agent","textChars":22,"textLines":1,"bbox":[64,676,360,24]}
+{"kind":"textbox","id":"sh/61032lsz","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1168,676,48,24]}
+{"kind":"notes","id":"nt/t14n4x","slide":6,"text":""}
+{"kind":"slide","id":"sl/xyxrf9","slide":7,"title":"Demo path","textShapes":8}
+{"kind":"textbox","id":"sh/yhgn29gr","slide":7,"text":"Demo path","textPreview":"Demo path","textChars":9,"textLines":1,"bbox":[64,56,760,58]}
+{"kind":"textbox","id":"sh/58z25kb6","slide":7,"text":"A reliable demo should show a focused test, not a sprawling crawl.","textPreview":"A reliable demo should show a focused test, not a sprawling crawl.","textChars":66,"textLines":1,"bbox":[64,126,900,42]}
+{"kind":"shape","id":"sh/gn29gr2p","slide":7,"bbox":[64,210,520,292]}
+{"kind":"textbox","id":"sh/nuxc3ylc","slide":7,"text":"Recommended test intent","textPreview":"Recommended test intent","textChars":23,"textLines":1,"bbox":[98,246,430,32]}
+{"kind":"textbox","id":"sh/y90je9cv","slide":7,"text":"Log in, open Dashboard, open Chat, open Roles, observe each page, then finish.","textPreview":"Log in, open Dashboard, open Chat, open Roles, observe each page, then finish.","textChars":78,"textLines":1,"bbox":[98,310,420,110]}
+{"kind":"shape","id":"sh/5wjudg7a","slide":7,"bbox":[690,210,410,292]}
+{"kind":"textbox","id":"sh/gbq1oryt","slide":7,"text":"What judges see","textPreview":"What judges see","textChars":15,"textLines":1,"bbox":[724,246,330,32]}
+{"kind":"textbox","id":"sh/nqxs72x4","slide":7,"text":"Browser launch\nAuthentication\nNavigation steps\nRun evidence\nUiPath-ready artifacts","textPreview":"Browser launch | Authentication | Navigation steps | Run evidence | UiPath-ready artifacts","textChars":82,"textLines":5,"bbox":[724,310,320,138]}
+{"kind":"shape","id":"sh/u54zidon","slide":7,"bbox":[64,666,1152,2]}
+{"kind":"textbox","id":"sh/cbulwval","slide":7,"text":"Talos Test Cloud Agent","textPreview":"Talos Test Cloud Agent","textChars":22,"textLines":1,"bbox":[64,676,360,24]}
+{"kind":"textbox","id":"sh/5sneloj2","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1168,676,48,24]}
+{"kind":"notes","id":"nt/xyxrf9","slide":7,"text":""}
+{"kind":"slide","id":"sl/hat18v","slide":8,"title":"Built with","textShapes":15}
+{"kind":"textbox","id":"sh/kf6dcbul","slide":8,"text":"Built with","textPreview":"Built with","textChars":10,"textLines":1,"bbox":[64,56,760,58]}
+{"kind":"textbox","id":"sh/vu9knih4","slide":8,"text":"UiPath","textPreview":"UiPath","textChars":6,"textLines":1,"bbox":[64,152,190,32]}
+{"kind":"textbox","id":"sh/29gr2p8n","slide":8,"text":"Test Cloud, Test Manager, Automation Cloud, UiPath CLI","textPreview":"Test Cloud, Test Manager, Automation Cloud, UiPath CLI","textChars":54,"textLines":1,"bbox":[292,152,770,32]}
+{"kind":"shape","id":"sh/d8bat47y","slide":8,"bbox":[64,200,1030,2]}
+{"kind":"textbox","id":"sh/knih4byh","slide":8,"text":"Frontend","textPreview":"Frontend","textChars":8,"textLines":1,"bbox":[64,222,190,32]}
+{"kind":"textbox","id":"sh/v6psfil0","slide":8,"text":"React, TypeScript, Vite","textPreview":"React, TypeScript, Vite","textChars":23,"textLines":1,"bbox":[292,222,770,32]}
+{"kind":"shape","id":"sh/2lszqtcj","slide":8,"bbox":[64,270,1030,2]}
+{"kind":"textbox","id":"sh/dcbulwva","slide":8,"text":"Backend","textPreview":"Backend","textChars":7,"textLines":1,"bbox":[64,292,190,32]}
+{"kind":"textbox","id":"sh/kre1w7mp","slide":8,"text":"Node.js, Fastify, BullMQ worker","textPreview":"Node.js, Fastify, BullMQ worker","textChars":31,"textLines":1,"bbox":[292,292,770,32]}
+{"kind":"shape","id":"sh/6psfil0r","slide":8,"bbox":[64,340,1030,2]}
+{"kind":"textbox","id":"sh/val87ed8","slide":8,"text":"Automation","textPreview":"Automation","textChars":10,"textLines":1,"bbox":[64,362,190,32]}
+{"kind":"textbox","id":"sh/kre1w7mp","slide":8,"text":"Playwright browser execution, agent loop, screenshots","textPreview":"Playwright browser execution, agent loop, screenshots","textChars":53,"textLines":1,"bbox":[292,362,770,32]}
+{"kind":"shape","id":"sh/dcbulwva","slide":8,"bbox":[64,410,1030,2]}
+{"kind":"textbox","id":"sh/2x4nap4r","slide":8,"text":"Data","textPreview":"Data","textChars":4,"textLines":1,"bbox":[64,432,190,32]}
+{"kind":"textbox","id":"sh/vixczed8","slide":8,"text":"PostgreSQL for run history, Redis for queue and live state","textPreview":"PostgreSQL for run history, Redis for queue and live state","textChars":58,"textLines":1,"bbox":[292,432,770,32]}
+{"kind":"shape","id":"sh/k3q5o7qp","slide":8,"bbox":[64,480,1030,2]}
+{"kind":"textbox","id":"sh/donyd0z6","slide":8,"text":"AI","textPreview":"AI","textChars":2,"textLines":1,"bbox":[64,502,190,32]}
+{"kind":"textbox","id":"sh/29gr2p8n","slide":8,"text":"OpenRouter, OpenAI, Anthropic Claude, Google Gemini","textPreview":"OpenRouter, OpenAI, Anthropic Claude, Google Gemini","textChars":51,"textLines":1,"bbox":[292,502,770,32]}
+{"kind":"shape","id":"sh/vu9knih4","slide":8,"bbox":[64,550,1030,2]}
+{"kind":"shape","id":"sh/judg7ads","slide":8,"bbox":[64,666,1152,2]}
+{"kind":"textbox","id":"sh/u9knih4b","slide":8,"text":"Talos Test Cloud Agent","textPreview":"Talos Test Cloud Agent","textChars":22,"textLines":1,"bbox":[64,676,360,24]}
+{"kind":"textbox","id":"sh/1032lszq","slide":8,"text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1168,676,48,24]}
+{"kind":"notes","id":"nt/hat18v","slide":8,"text":""}
+{"kind":"slide","id":"sl/1vexfg","slide":9,"title":"What we learned","textShapes":10}
+{"kind":"textbox","id":"sh/5gbq1ory","slide":9,"text":"What we learned","textPreview":"What we learned","textChars":15,"textLines":1,"bbox":[64,56,760,58]}
+{"kind":"textbox","id":"sh/upwb2hwf","slide":9,"text":"Agentic testing needs ops discipline","textPreview":"Agentic testing needs ops discipline","textChars":36,"textLines":1,"bbox":[64,174,780,36]}
+{"kind":"textbox","id":"sh/nap4r65w","slide":9,"text":"Queues, browser runtimes, stop signals, and live progress matter as much as model reasoning.","textPreview":"Queues, browser runtimes, stop signals, and live progress matter as much as model reasoning.","textChars":92,"textLines":1,"bbox":[64,222,900,54]}
+{"kind":"textbox","id":"sh/cj6tovah","slide":9,"text":"Evidence beats magic","textPreview":"Evidence beats magic","textChars":20,"textLines":1,"bbox":[64,306,780,36]}
+{"kind":"textbox","id":"sh/54zidony","slide":9,"text":"A run is useful when a reviewer can inspect the steps and understand exactly what happened.","textPreview":"A run is useful when a reviewer can inspect the steps and understand exactly what happened.","textChars":91,"textLines":1,"bbox":[64,354,900,54]}
+{"kind":"textbox","id":"sh/udg7adsj","slide":9,"text":"UiPath gives agents a home","textPreview":"UiPath gives agents a home","textChars":26,"textLines":1,"bbox":[64,438,780,36]}
+{"kind":"textbox","id":"sh/nyd0z610","slide":9,"text":"Test Cloud turns adaptive exploration into governed testing work.","textPreview":"Test Cloud turns adaptive exploration into governed testing work.","textChars":65,"textLines":1,"bbox":[64,486,900,54]}
+{"kind":"shape","id":"sh/cfa9w3m9","slide":9,"bbox":[960,180,172,300]}
+{"kind":"textbox","id":"sh/1032lszq","slide":9,"text":"Trust comes from visibility.","textPreview":"Trust comes from visibility.","textChars":28,"textLines":1,"bbox":[990,232,112,190]}
+{"kind":"shape","id":"sh/xs72x4na","slide":9,"bbox":[64,666,1152,2]}
+{"kind":"textbox","id":"sh/87ed8bat","slide":9,"text":"Talos Test Cloud Agent","textPreview":"Talos Test Cloud Agent","textChars":22,"textLines":1,"bbox":[64,676,360,24]}
+{"kind":"textbox","id":"sh/fmlkjm1c","slide":9,"text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[1168,676,48,24]}
+{"kind":"notes","id":"nt/1vexfg","slide":9,"text":""}
+{"kind":"slide","id":"sl/dy1n45","slide":10,"title":"What comes next","textShapes":13}
+{"kind":"textbox","id":"sh/bi9s36hc","slide":10,"text":"What comes next","textPreview":"What comes next","textChars":15,"textLines":1,"bbox":[64,56,800,58]}
+{"kind":"textbox","id":"sh/032lszqt","slide":10,"text":"The next version deepens the UiPath connection: richer Test Manager mappings, artifact attachments, regression generation, and risk-based test selection.","textPreview":"The next version deepens the UiPath connection: richer Test Manager mappings, artifact attachments, regression generation, and risk-based...","textChars":153,"textLines":1,"bbox":[64,126,930,70]}
+{"kind":"shape","id":"sh/tovahoza","slide":10,"bbox":[64,240,470,120]}
+{"kind":"textbox","id":"sh/i9s36hcr","slide":10,"text":"Test Manager mapping","textPreview":"Test Manager mapping","textChars":20,"textLines":1,"bbox":[92,262,390,30]}
+{"kind":"textbox","id":"sh/bulwval8","slide":10,"text":"Associate Talos runs with project, test set, and test case records.","textPreview":"Associate Talos runs with project, test set, and test case records.","textChars":67,"textLines":1,"bbox":[92,304,392,36]}
+{"kind":"shape","id":"sh/0fepkzup","slide":10,"bbox":[654,240,470,120]}
+{"kind":"textbox","id":"sh/p0bi9s36","slide":10,"text":"Evidence attachments","textPreview":"Evidence attachments","textChars":20,"textLines":1,"bbox":[682,262,390,30]}
+{"kind":"textbox","id":"sh/idonyd0z","slide":10,"text":"Push screenshots, logs, JUnit, and run JSON into the governed review path.","textPreview":"Push screenshots, logs, JUnit, and run JSON into the governed review path.","textChars":74,"textLines":1,"bbox":[682,304,392,36]}
+{"kind":"shape","id":"sh/byhgn29g","slide":10,"bbox":[64,418,470,120]}
+{"kind":"textbox","id":"sh/ra5gbq1o","slide":10,"text":"Regression drafting","textPreview":"Regression drafting","textChars":19,"textLines":1,"bbox":[92,440,390,30]}
+{"kind":"textbox","id":"sh/2p8nqxs7","slide":10,"text":"Convert successful agentic paths into repeatable tests for future releases.","textPreview":"Convert successful agentic paths into repeatable tests for future releases.","textChars":75,"textLines":1,"bbox":[92,482,392,36]}
+{"kind":"shape","id":"sh/9gr2p8nq","slide":10,"bbox":[654,418,470,120]}
+{"kind":"textbox","id":"sh/gvy90je9","slide":10,"text":"Risk-based orchestration","textPreview":"Risk-based orchestration","textChars":24,"textLines":1,"bbox":[682,440,390,30]}
+{"kind":"textbox","id":"sh/r2p8nqxs","slide":10,"text":"Use history and change impact to decide which tests should run first.","textPreview":"Use history and change impact to decide which tests should run first.","textChars":69,"textLines":1,"bbox":[682,482,392,36]}
+{"kind":"textbox","id":"sh/2hwfyxob","slide":10,"text":"Vision: AI explores, UiPath governs, humans decide.","textPreview":"Vision: AI explores, UiPath governs, humans decide.","textChars":51,"textLines":1,"bbox":[64,594,900,34]}
+{"kind":"shape","id":"sh/94fu18jq","slide":10,"bbox":[64,666,1152,2]}
+{"kind":"textbox","id":"sh/kjm1cfa9","slide":10,"text":"Talos Test Cloud Agent","textPreview":"Talos Test Cloud Agent","textChars":22,"textLines":1,"bbox":[64,676,360,24]}
+{"kind":"textbox","id":"sh/rqd4vmtw","slide":10,"text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[1168,676,48,24]}
+{"kind":"notes","id":"nt/dy1n45","slide":10,"text":""}
