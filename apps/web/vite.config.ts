@@ -1,0 +1,17 @@
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import path from "path";
+
+export default defineConfig({
+  plugins: [react()],
+  envDir: "../../",  // load .env from monorepo root
+  server: {
+    port: 11111,
+    allowedHosts: ["c8fa-103-251-217-167.ngrok-free.app"],
+    proxy: {
+      // Match production nginx: SPA and API may differ by host/port; relative `/api/*` must reach the backend.
+      "/api": { target: "http://localhost:11114", changeOrigin: true },
+    },
+  },
+  resolve: { alias: { "@": path.resolve(__dirname, "src") } },
+});
