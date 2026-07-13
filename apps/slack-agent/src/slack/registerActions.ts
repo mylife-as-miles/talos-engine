@@ -1,0 +1,10 @@
+import type { App } from '@slack/bolt';
+import { z } from 'zod';
+import type { TalosMcpClient } from '../mcp/TalosMcpClient.js';
+import type { RunThreadStore } from '../state/RunThreadStore.js';
+import { runStartedBlocks } from './blocks/runStartedBlocks.js';
+import { bugBlocks } from './blocks/bugBlocks.js';
+const Payload=z.object({value:z.string().uuid()});
+export function registerActions(app:App,deps:{mcp:TalosMcpClient;store:RunThreadStore}){app.action('talos_stop_run',async({ack,body,client,action}:any)=>{await ack(); const {value:runId}=Payload.parse(action); await deps.mcp.stopRun(runId).catch(()=>undefined); await client.chat.postMessage({channel:body.channel.id,thread_ts:body.message.thread_ts??body.message.ts,text:`Stop requested for Talos run ${runId}.`});});
+ app.action('talos_rerun',async({ack,body,client,action}:any)=>{await ack(); const {value:oldRunId}=Payload.parse(action); const old=await deps.store.get(oldRunId); if(!old){await client.chat.postMessage({channel:body.channel.id,thread_ts:body.message.thread_ts??body.message.ts,text:'I could not find the previous run parameters.'}); return} const run=await deps.mcp.runTest({projectId:old.projectId,environmentId:old.environmentId,intent:old.intent,testId:old.testId,wait:false}); await deps.store.save({...old,runId:run.runId,webUrl:run.webUrl,startedAt:new Date().toISOString(),completed:false}); await client.chat.postMessage({channel:old.channelId,thread_ts:old.threadTs,text:`Rerun started: ${run.runId}`,blocks:runStartedBlocks({project:old.projectId,environment:old.environmentId,intent:old.intent,status:run.status,runId:run.runId,webUrl:run.webUrl})});});
+ app.action('talos_show_bugs',async({ack,body,client,action}:any)=>{await ack(); const {value:runId}=Payload.parse(action); const run=await deps.mcp.getRun(runId,true); await client.chat.postMessage({channel:body.channel.id,thread_ts:body.message.thread_ts??body.message.ts,text:`Bugs for Talos run ${runId}`,blocks:bugBlocks(run.bugs??[],run.webUrl)});});}

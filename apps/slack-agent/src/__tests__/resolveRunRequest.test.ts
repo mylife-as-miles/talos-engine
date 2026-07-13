@@ -1,0 +1,4 @@
+import { describe,it,expect } from 'vitest';
+import { resolveRunRequest,isProductionLike } from '../talos/resolveRunRequest.js';
+const projects=[{id:'p1',name:'Checkout',environments:[{id:'e1',name:'Staging',baseUrl:'https://staging.example.com'},{id:'e2',name:'Production',baseUrl:'https://example.com'}]}];
+describe('resolveRunRequest',()=>{it('matches project and environment',()=>{const r=resolveRunRequest({text:'test checkout on staging',projects}); expect(r.kind).toBe('resolved'); if(r.kind==='resolved')expect(r.environment.name).toBe('Staging')}); it('matches saved tests',()=>{const r=resolveRunRequest({text:'run saved checkout regression',projects,testsByProject:new Map([['p1',[{id:'t1',name:'Checkout regression',intent:'checkout'}]]])}); expect(r.kind).toBe('resolved'); if(r.kind==='resolved')expect(r.test?.id).toBe('t1')}); it('requires production confirmation',()=>{expect(isProductionLike({name:'Production',baseUrl:'https://example.com'})).toBe(true)})});

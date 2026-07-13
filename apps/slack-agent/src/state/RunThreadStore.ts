@@ -1,0 +1,2 @@
+export type RunThread={runId:string;teamId?:string;channelId:string;threadTs:string;userId:string;projectId:string;environmentId:string;intent:string;testId?:string;webUrl?:string;startedAt:string;completed?:boolean};
+export interface RunThreadStore{save(m:RunThread):Promise<void>;get(runId:string):Promise<RunThread|undefined>;latest(channelId:string,threadTs?:string):Promise<RunThread|undefined>;markCompleted(runId:string):Promise<void>;dedupe(key:string,ttlSeconds?:number):Promise<boolean>;close?():Promise<void>}
