@@ -1,1 +1,22 @@
-{"display_information":{"name":"Talos Release Commander","description":"Collaborative Slack control room for Talos browser testing","background_color":"#111827"},"features":{"app_home":{"home_tab_enabled":true,"messages_tab_enabled":true,"messages_tab_read_only_enabled":false},"bot_user":{"display_name":"Talos","always_online":true}},"oauth_config":{"scopes":{"bot":["assistant:write","chat:write","app_mentions:read","im:read","im:write","im:history","channels:read","commands"]}},"settings":{"event_subscriptions":{"bot_events":["app_home_opened","app_mention","message.im","agent_view","app_context_changed"]},"interactivity":{"is_enabled":true},"socket_mode_enabled":true,"org_deploy_enabled":false,"token_rotation_enabled":false}}
+{
+  "display_information": { "name": "Talos Release Commander", "description": "Collaborative Slack control room for Talos browser testing", "background_color": "#111827" },
+  "features": {
+    "app_home": { "home_tab_enabled": true, "messages_tab_enabled": true, "messages_tab_read_only_enabled": false },
+    "agent_view": {
+      "agent_description": "Start, monitor, stop, and review Talos browser-test runs from Slack.",
+      "suggested_prompts": [
+        { "title": "Test staging checkout", "message": "Test staging checkout" },
+        { "title": "Run a saved Talos test", "message": "Run a saved Talos test" },
+        { "title": "Show the latest failed run", "message": "Show the latest failed run" },
+        { "title": "Show critical bugs", "message": "Show critical bugs" },
+        { "title": "Stop the active test", "message": "Stop the active test" }
+      ]
+    },
+    "bot_user": { "display_name": "Talos", "always_online": true }
+  },
+  "oauth_config": { "scopes": { "bot": ["assistant:write", "chat:write", "app_mentions:read", "im:read", "im:write", "im:history", "channels:read"] } },
+  "settings": {
+    "event_subscriptions": { "bot_events": ["app_home_opened", "app_context_changed", "message.im", "app_mention"] },
+    "interactivity": { "is_enabled": true }, "socket_mode_enabled": true, "org_deploy_enabled": false, "token_rotation_enabled": false
+  }
+}
