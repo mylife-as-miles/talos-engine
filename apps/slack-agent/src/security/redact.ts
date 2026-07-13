@@ -1,0 +1,3 @@
+const SECRET_PATTERNS=[/xox[baprs]-[^\s,}]+/g,/Bearer\s+[A-Za-z0-9._~+\/-]+=*/gi,/(authorization\s*[:=]\s*)[^\s,}]+/gi,/(cookie\s*[:=]\s*)[^\n,}]+/gi,/(password\s*[:=]\s*)[^\s,}]+/gi,/(session[_-]?token\s*[:=]\s*)[^\s,}]+/gi,/(oauth[_-]?code\s*[:=]\s*)[^\s,}]+/gi,/(api[_-]?key\s*[:=]\s*)[^\s,}]+/gi];
+export function redact(input:unknown):string{let s=typeof input==='string'?input:JSON.stringify(input); for(const p of SECRET_PATTERNS)s=s.replace(p,(m,g1)=>typeof g1==='string'?`${g1}[REDACTED]`:'[REDACTED]'); return s}
+export function redactObject<T>(obj:T):T{return JSON.parse(redact(obj)) as T}

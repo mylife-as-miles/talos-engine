@@ -416,3 +416,7 @@ understand, and build on.
 ## License
 
 Apache 2.0. See [LICENSE](LICENSE).
+
+## Slack Agent
+
+Talos Release Commander lives in [`apps/slack-agent`](apps/slack-agent/README.md). It lets teams start Talos browser tests, stream run progress, stop or rerun tests, and view evidence-backed results directly from Slack while all browser execution and evidence remain in Talos. See [`docs/SLACK_AGENT_ARCHITECTURE.md`](docs/SLACK_AGENT_ARCHITECTURE.md) for diagrams.

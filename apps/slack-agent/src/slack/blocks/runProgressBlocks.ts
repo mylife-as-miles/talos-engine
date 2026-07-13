@@ -1,0 +1,2 @@
+type KnownBlock = Record<string, any>;
+export function runProgressBlocks(i:{title:string;currentStep?:string;browserSteps?:number;bugsObserved?:number;plan?:Array<{text:string;status:string}>}):KnownBlock[]{const plan=(i.plan??[]).slice(0,6).map(p=>`${p.status==='done'?'✓':p.status==='current'?'→':p.status==='failed'?'✕':'○'} ${p.text}`).join('\n'); return[{type:'section',text:{type:'mrkdwn',text:`*${i.title}*${plan?`\n\n${plan}`:''}\n\n${i.currentStep?`Current step: ${i.currentStep}\n`:''}Browser steps: ${i.browserSteps??0}\nBugs observed: ${i.bugsObserved??0}`}}]}

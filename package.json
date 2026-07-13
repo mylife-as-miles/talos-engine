@@ -13,7 +13,10 @@
     "dev:api": "npm run dev --workspace=apps/api",
     "dev:worker": "npm run dev --workspace=apps/worker",
     "dev:web": "npm run dev --workspace=apps/web",
-    "migrate": "npm run migrate --workspace=packages/db"
+    "migrate": "npm run migrate --workspace=packages/db",
+    "dev:slack": "npm run dev --workspace=apps/slack-agent",
+    "build:slack": "npm run build --workspace=apps/slack-agent",
+    "test:slack": "npm run test --workspace=apps/slack-agent"
   },
   "engines": {
     "node": ">=20"
