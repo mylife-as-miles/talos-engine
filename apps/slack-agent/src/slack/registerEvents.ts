@@ -23,7 +23,8 @@ export function registerEvents(app:App,deps:{mcp:TalosMcpClient;store:RunThreadS
     if(!event?.user||event.bot_id||event.subtype||!event.text?.trim())return;
     const eventId=body?.event_id??`${event.channel}:${event.ts}`; if(!await deps.store.dedupe(`event:${eventId}`))return;
     const channel=event.channel,threadTs=event.thread_ts??event.ts,text=event.text.trim();
-    if(/\bstop\b/i.test(text)){await stopCurrent(event,body,client,channel,threadTs);return}
+    const isStopCommand=/^(?:<@[^>]+>\s*)?(?:please\s+)?(?:stop|cancel)(?:\s+(?:the|my|current|active))?\s+(?:test|run)\s*[.!]?$/i.test(text);
+    if(isStopCommand){await stopCurrent(event,body,client,channel,threadTs);return}
     try{const projects=await deps.mcp.listProjects();const testsByProject=new Map();for(const project of projects)testsByProject.set(project.id,await deps.mcp.listTests(project.id).catch(()=>[]));const resolved=resolveRunRequest({text,projects,testsByProject});
       if(resolved.kind!=='resolved'){await client.chat.postMessage({channel,thread_ts:threadTs,text:resolved.message,blocks:errorBlocks(resolved.message)});return}
       const input={teamId:body?.team_id,channelId:channel,threadTs,userId:event.user,projectId:resolved.project.id,projectName:resolved.project.name,environmentId:resolved.environment.id,environmentName:resolved.environment.name,intent:resolved.intent,testId:resolved.test?.id};

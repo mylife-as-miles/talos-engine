@@ -1,4 +1,4 @@
 import type { TalosEnvironment,TalosProject,TalosTest,TalosBug } from '../mcp/types.js';
 export type ResolvedRunRequest={kind:'resolved';project:TalosProject;environment:TalosEnvironment;test?:TalosTest;intent:string;requiresConfirmation:boolean;reason?:string}|{kind:'ambiguous';message:string;projects?:TalosProject[];environments?:TalosEnvironment[];tests?:TalosTest[]};
 export type NormalizedRunEvent={type:'progress'|'bug'|'done'|'error';status?:string;currentStep?:string;browserSteps?:number;bugsObserved?:number;plan?:Array<{text:string;status:string}>;bug?:TalosBug;run?:any;message?:string;terminal?:boolean};
-export type RunReport={verdict:'READY'|'PASSED WITH ISSUES'|'BLOCKED'|'STOPPED';severityCounts:Record<string,number>;sortedBugs:TalosBug[];durationMs?:number;summary:string;stepsCount:number;failedStepsCount:number};
+export type RunReport={verdict:'READY'|'PASSED WITH ISSUES'|'BLOCKED'|'STOPPED'|'IN PROGRESS'|'MONITORING INTERRUPTED';severityCounts:Record<string,number>;sortedBugs:TalosBug[];durationMs?:number;summary:string;stepsCount:number;failedStepsCount:number};

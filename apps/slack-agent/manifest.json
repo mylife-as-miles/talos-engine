@@ -8,7 +8,6 @@
         { "title": "Test staging checkout", "message": "Test staging checkout" },
         { "title": "Run a saved Talos test", "message": "Run a saved Talos test" },
         { "title": "Show the latest failed run", "message": "Show the latest failed run" },
-        { "title": "Show critical bugs", "message": "Show critical bugs" },
         { "title": "Stop the active test", "message": "Stop the active test" }
       ]
     },
