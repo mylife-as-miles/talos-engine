@@ -26,7 +26,7 @@ const runs = meter.createCounter("talos.agent.runs", {
 });
 const runDuration = meter.createHistogram("talos.agent.run.duration", {
   description: "Wall-clock duration of Talos agent runs.",
-  unit: "ms",
+  unit: "s",
 });
 const agentSteps = meter.createCounter("talos.agent.steps", {
   description: "Number of browser-agent steps executed.",
@@ -38,7 +38,7 @@ const llmCalls = meter.createCounter("talos.gen_ai.calls", {
 });
 const llmDuration = meter.createHistogram("talos.gen_ai.call.duration", {
   description: "Latency of LLM calls made by Talos agents.",
-  unit: "ms",
+  unit: "s",
 });
 const llmTokens = meter.createCounter("talos.gen_ai.tokens", {
   description: "Input and output tokens consumed by Talos agents.",
@@ -46,7 +46,7 @@ const llmTokens = meter.createCounter("talos.gen_ai.tokens", {
 });
 const llmCost = meter.createCounter("talos.gen_ai.cost", {
   description: "Estimated LLM cost accumulated by Talos agents.",
-  unit: "USD",
+  unit: "{USD}",
 });
 const browserNetworkErrors = meter.createCounter("talos.browser.network.errors", {
   description: "Action-correlated browser network errors found by Talos.",
@@ -131,7 +131,7 @@ export async function withTalosRunSpan<T>(
         throw error;
       } finally {
         activeRuns.add(-1, metricAttributes);
-        runDuration.record(Date.now() - startedAt, metricAttributes);
+        runDuration.record((Date.now() - startedAt) / 1000, metricAttributes);
         span.end();
       }
     },
@@ -196,27 +196,30 @@ export function recordAgentStep(step: RunStep): void {
 export function recordLlmCall(call: LLMCallRecord): void {
   const provider = modelProvider(call.model);
   const status = call.error ? "error" : "ok";
-  const attributes: Attributes = {
+  const metricAttributes: Attributes = {
     "gen_ai.operation.name": "chat",
     "gen_ai.provider.name": provider,
     "gen_ai.request.model": call.model,
     "talos.agent.type": stringValue(call.agent),
     "talos.llm.status": status,
     "talos.llm.has_vision": call.hasVision,
+  };
+  const spanAttributes: Attributes = {
+    ...metricAttributes,
     "talos.llm.attempt": call.attempt,
     "talos.step.index": call.stepIndex,
   };
 
-  llmCalls.add(1, attributes);
-  llmDuration.record(Math.max(0, call.durationMs), attributes);
+  llmCalls.add(1, metricAttributes);
+  llmDuration.record(Math.max(0, call.durationMs) / 1000, metricAttributes);
   if (call.inputTokens > 0) {
-    llmTokens.add(call.inputTokens, { ...attributes, "gen_ai.token.type": "input" });
+    llmTokens.add(call.inputTokens, { ...metricAttributes, "gen_ai.token.type": "input" });
   }
   if (call.outputTokens > 0) {
-    llmTokens.add(call.outputTokens, { ...attributes, "gen_ai.token.type": "output" });
+    llmTokens.add(call.outputTokens, { ...metricAttributes, "gen_ai.token.type": "output" });
   }
   if (call.costUsd > 0) {
-    llmCost.add(call.costUsd, attributes);
+    llmCost.add(call.costUsd, metricAttributes);
   }
 
   const now = Date.now();
@@ -226,7 +229,7 @@ export function recordLlmCall(call: LLMCallRecord): void {
       kind: SpanKind.CLIENT,
       startTime: now - Math.max(0, call.durationMs),
       attributes: {
-        ...attributes,
+        ...spanAttributes,
         "gen_ai.usage.input_tokens": call.inputTokens,
         "gen_ai.usage.output_tokens": call.outputTokens,
         "talos.llm.cost_usd": call.costUsd,
