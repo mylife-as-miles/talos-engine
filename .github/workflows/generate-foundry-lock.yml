@@ -7,6 +7,12 @@ on:
     paths:
       - casting.yaml
       - .github/workflows/generate-foundry-lock.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - casting.yaml
+      - .github/workflows/generate-foundry-lock.yml
 
 permissions:
   contents: write
