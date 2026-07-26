@@ -2,9 +2,9 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 
 const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
-const preload = "--require @opentelemetry/auto-instrumentations-node/register";
+const preload = "--require ./scripts/otel-register.cjs";
 const existingNodeOptions = process.env.NODE_OPTIONS?.trim() ?? "";
-const nodeOptions = existingNodeOptions.includes("@opentelemetry/auto-instrumentations-node/register")
+const nodeOptions = existingNodeOptions.includes("scripts/otel-register.cjs")
   ? existingNodeOptions
   : `${existingNodeOptions} ${preload}`.trim();
 
