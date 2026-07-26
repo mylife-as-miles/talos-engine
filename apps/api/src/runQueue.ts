@@ -1,5 +1,4 @@
 import { Queue } from "bullmq";
-import { BullMQOtel } from "bullmq-otel";
 
 /** BullMQ forbids ':' in queue names (reserved for Redis Cluster key tags). */
 export const RUN_QUEUE_NAME = "talos-runs";
@@ -29,20 +28,8 @@ function parseRedisUrl(redisUrl: string) {
   };
 }
 
-function createQueueTelemetry() {
-  return new BullMQOtel({
-    tracerName: "@talos/api",
-    meterName: "@talos/api",
-    version: process.env.TALOS_VERSION || "dev",
-    enableMetrics: true,
-  });
-}
-
 export function createRunQueue(redisUrl: string) {
   const connection = parseRedisUrl(redisUrl);
-  const queue = new Queue<RunJobData>(RUN_QUEUE_NAME, {
-    connection,
-    telemetry: createQueueTelemetry(),
-  });
+  const queue = new Queue(RUN_QUEUE_NAME, { connection });
   return { queue, connection };
 }
