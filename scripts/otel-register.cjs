@@ -11,5 +11,12 @@ const {
 } = require("@appsignal/opentelemetry-instrumentation-bullmq");
 
 registerInstrumentations({
-  instrumentations: [new BullMQInstrumentation()],
+  instrumentations: [
+    new BullMQInstrumentation({
+      // Talos runs are user-visible workflows. Keeping the process span as a
+      // child of the publish span makes the API -> queue -> worker path one
+      // navigable distributed trace instead of two traces joined only by a link.
+      useProducerSpanAsConsumerParent: true,
+    }),
+  ],
 });
