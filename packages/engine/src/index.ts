@@ -115,6 +115,16 @@ export type { LiveRunSnapshot, LiveActivityEntry, LiveRunReduceEvent } from "./l
 export { runFlowDiscoveryAgent, deduplicateFlowsWithLLM } from "./flowDiscoveryAgent.js";
 export type { DiscoveredFlow, FlowDiscoveryResult } from "./flowDiscoveryAgent.js";
 
+// ─── OpenTelemetry ───────────────────────────────────────────────────────────
+export {
+  recordAgentStep,
+  recordLlmCall,
+  recordNetworkBug,
+  recordRunResult,
+  withTalosRunSpan,
+} from "./telemetry.js";
+export type { TalosRunTelemetry } from "./telemetry.js";
+
 // ─── Run Orchestrator ────────────────────────────────────────────────────────
-export { runOrchestratedJob } from "./runOrchestrator.js";
+export { runOrchestratedJob } from "./instrumentedRunOrchestrator.js";
 export type { RunJob, RunResult } from "./runOrchestrator.js";
