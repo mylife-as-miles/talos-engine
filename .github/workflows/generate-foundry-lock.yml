@@ -1,0 +1,47 @@
+name: Generate Foundry lockfile
+
+on:
+  push:
+    branches:
+      - agent/add-foundry-lock
+    paths:
+      - casting.yaml
+      - .github/workflows/generate-foundry-lock.yml
+
+permissions:
+  contents: write
+
+jobs:
+  generate-lock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/add-foundry-lock
+          fetch-depth: 0
+
+      - name: Install Foundry
+        run: |
+          curl -fsSL https://signoz.io/foundry.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+      - name: Generate resolved casting lock
+        run: |
+          export PATH="$HOME/.local/bin:$HOME/bin:$PATH"
+          command -v foundryctl
+          foundryctl forge -f casting.yaml
+          test -s casting.yaml.lock
+
+      - name: Commit generated lockfile
+        run: |
+          rm -rf pours
+          git rm .github/workflows/generate-foundry-lock.yml
+          git add casting.yaml.lock
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: add Foundry casting lockfile"
+          git push origin HEAD:agent/add-foundry-lock
