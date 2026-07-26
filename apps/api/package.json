@@ -14,7 +14,6 @@
     "@talos/db": "*",
     "@talos/engine": "*",
     "bullmq": "^5.71.1",
-    "bullmq-otel": "^2.0.0",
     "dotenv": "^16.4.0",
     "fastify": "^5.2.0",
     "ioredis": "^5.8.2",
