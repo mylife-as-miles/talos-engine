@@ -5,6 +5,7 @@ dist/
 *.log
 *.tsbuildinfo
 data/
+pours/
 
 # Local AI-agent workspace/config artifacts
 .agents/
