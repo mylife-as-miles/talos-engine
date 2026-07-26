@@ -1,0 +1,45 @@
+diff --git a/apps/worker/src/runQueue.ts b/apps/worker/src/runQueue.ts
+index 897aa05..0000000 100644
+--- a/apps/worker/src/runQueue.ts
++++ b/apps/worker/src/runQueue.ts
+@@ -1,4 +1,5 @@
+ import { Queue, Worker, Job } from "bullmq";
++import { BullMQOtel } from "bullmq-otel";
+ import * as path from "path";
+ import type { StorageAdapter } from "@talos/engine";
+ import {
+@@ -39,6 +40,15 @@ export interface RunJobData {
+   triggerRef: string;
+ }
+ 
++function createBullMqTelemetry() {
++  return new BullMQOtel({
++    tracerName: "@talos/worker",
++    meterName: "@talos/worker",
++    version: process.env.TALOS_VERSION || "dev",
++    enableMetrics: true,
++  });
++}
++
+ export function createRunQueue(redisUrl: string) {
+   const url = new URL(redisUrl);
+   const connection = {
+@@ -47,7 +57,10 @@ export function createRunQueue(redisUrl: string) {
+     password: url.password || undefined,
+   };
+ 
+-  const queue = new Queue(RUN_QUEUE_NAME, { connection });
++  const queue = new Queue<RunJobData>(RUN_QUEUE_NAME, {
++    connection,
++    telemetry: createBullMqTelemetry(),
++  });
+   return { queue, connection };
+ }
+@@ -171,6 +184,7 @@ export async function createRunWorker(
+     {
+       connection,
+       concurrency,
++      telemetry: createBullMqTelemetry(),
+       removeOnComplete: { count: 100 },
+       removeOnFail: { count: 500 }, // keep last 500 failed jobs for post-mortem debugging
+     },
