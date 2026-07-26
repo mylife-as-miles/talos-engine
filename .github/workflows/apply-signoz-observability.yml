@@ -34,10 +34,52 @@ jobs:
           ref: agent/signoz-observability
           fetch-depth: 0
 
-      - name: Apply worker telemetry patch
+      - name: Add BullMQ telemetry to the worker
         run: |
-          git apply --check .github/patches/signoz-worker.patch
-          git apply --whitespace=fix .github/patches/signoz-worker.patch
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("apps/worker/src/runQueue.ts")
+          text = path.read_text()
+
+          replacements = [
+              (
+                  'import { Queue, Worker, Job } from "bullmq";\n',
+                  'import { Queue, Worker, Job } from "bullmq";\nimport { BullMQOtel } from "bullmq-otel";\n',
+              ),
+              (
+                  'export function createRunQueue(redisUrl: string) {\n',
+                  'function createBullMqTelemetry() {\n'
+                  '  return new BullMQOtel({\n'
+                  '    tracerName: "@talos/worker",\n'
+                  '    meterName: "@talos/worker",\n'
+                  '    version: process.env.TALOS_VERSION || "dev",\n'
+                  '    enableMetrics: true,\n'
+                  '  });\n'
+                  '}\n\n'
+                  'export function createRunQueue(redisUrl: string) {\n',
+              ),
+              (
+                  '  const queue = new Queue(RUN_QUEUE_NAME, { connection });\n',
+                  '  const queue = new Queue<RunJobData>(RUN_QUEUE_NAME, {\n'
+                  '    connection,\n'
+                  '    telemetry: createBullMqTelemetry(),\n'
+                  '  });\n',
+              ),
+              (
+                  '      connection,\n      concurrency,\n      removeOnComplete: { count: 100 },\n',
+                  '      connection,\n      concurrency,\n      telemetry: createBullMqTelemetry(),\n      removeOnComplete: { count: 100 },\n',
+              ),
+          ]
+
+          for old, new in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"Expected one worker replacement, found {count}: {old[:80]!r}")
+              text = text.replace(old, new, 1)
+
+          path.write_text(text)
+          PY
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
