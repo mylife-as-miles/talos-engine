@@ -76,13 +76,13 @@ function modelProvider(model: string): string {
   if (normalized.includes("anthropic") || normalized.startsWith("claude-")) return "anthropic";
   if (normalized.includes("gemini") || normalized.includes("google")) return "google";
   if (normalized.includes("openrouter")) return "openrouter";
-  return model.includes("/") ? model.split("/", 1)[0] : "unknown";
+  return model.includes("/") ? model.split("/")[0] : "unknown";
 }
 
-function safeTargetOrigin(rawUrl?: string): string | undefined {
+function safeTargetHost(rawUrl?: string): string | undefined {
   if (!rawUrl) return undefined;
   try {
-    return new URL(rawUrl).origin;
+    return new URL(rawUrl).hostname;
   } catch {
     return undefined;
   }
@@ -97,14 +97,14 @@ function runMetricAttributes(info: TalosRunTelemetry, status?: string): Attribut
 }
 
 function runSpanAttributes(info: TalosRunTelemetry): Attributes {
-  const targetOrigin = safeTargetOrigin(info.targetUrl);
+  const targetHost = safeTargetHost(info.targetUrl);
   return {
     ...(info.runId ? { "talos.run.id": info.runId } : {}),
     ...(info.projectId ? { "talos.project.id": info.projectId } : {}),
     ...(info.testId ? { "talos.test.id": info.testId } : {}),
     "deployment.environment.name": stringValue(info.environmentName),
     "talos.trigger.type": stringValue(info.triggerRef),
-    ...(targetOrigin ? { "server.address": targetOrigin } : {}),
+    ...(targetHost ? { "server.address": targetHost } : {}),
   };
 }
 
@@ -121,8 +121,7 @@ export async function withTalosRunSpan<T>(
     { kind: SpanKind.INTERNAL, attributes: runSpanAttributes(info) },
     async (span) => {
       try {
-        const result = await execute(span);
-        return result;
+        return await execute(span);
       } catch (error) {
         span.recordException(error instanceof Error ? error : String(error));
         span.setStatus({
@@ -132,8 +131,8 @@ export async function withTalosRunSpan<T>(
         throw error;
       } finally {
         activeRuns.add(-1, metricAttributes);
-        span.end();
         runDuration.record(Date.now() - startedAt, metricAttributes);
+        span.end();
       }
     },
   );
@@ -147,13 +146,14 @@ export function recordRunResult(
     bugsFound?: Array<Pick<RunStep, "severity" | "bugType" | "source">>;
     llmCalls?: LLMCallRecord[];
   },
-  span: Span = trace.getActiveSpan() ?? trace.wrapSpanContext({ traceId: "00000000000000000000000000000000", spanId: "0000000000000000", traceFlags: 0 }),
+  span?: Span,
 ): void {
   const status = stringValue(result.status);
   const attributes = runMetricAttributes(info, status);
+  const targetSpan = span ?? trace.getActiveSpan();
   runs.add(1, attributes);
 
-  span.setAttributes({
+  targetSpan?.setAttributes({
     "talos.run.status": status,
     "talos.run.steps": result.stepsDetail?.length ?? 0,
     "talos.run.bugs": result.bugsFound?.length ?? 0,
@@ -161,9 +161,9 @@ export function recordRunResult(
   });
 
   if (status === "failed") {
-    span.setStatus({ code: SpanStatusCode.ERROR, message: "Talos run failed" });
+    targetSpan?.setStatus({ code: SpanStatusCode.ERROR, message: "Talos run failed" });
   } else {
-    span.setStatus({ code: SpanStatusCode.OK });
+    targetSpan?.setStatus({ code: SpanStatusCode.OK });
   }
 
   for (const bug of result.bugsFound ?? []) {
@@ -220,7 +220,6 @@ export function recordLlmCall(call: LLMCallRecord): void {
   }
 
   const now = Date.now();
-  const parentContext = context.active();
   const span = tracer.startSpan(
     "gen_ai.chat",
     {
@@ -233,7 +232,7 @@ export function recordLlmCall(call: LLMCallRecord): void {
         "talos.llm.cost_usd": call.costUsd,
       },
     },
-    parentContext,
+    context.active(),
   );
 
   if (call.error) {
@@ -252,5 +251,5 @@ export function recordNetworkBug(bug: NetworkBug): void {
     ...(typeof bug.statusCode === "number" ? { "http.response.status_code": bug.statusCode } : {}),
   };
   browserNetworkErrors.add(1, attributes);
-  trace.getActiveSpan()?.addEvent("talos.browser.network_error", attributes);
+  trace.getActiveSpan()?.addEvent("talos.browser.network_error", attributes, bug.at);
 }
