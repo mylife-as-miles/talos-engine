@@ -36,39 +36,47 @@ export async function runOrchestratedJob(
   return withTalosRunSpan(telemetry, async (span) => {
     span.addEvent("talos.run.started");
 
-    const result = await runOrchestratedJobBase(storage, {
-      ...job,
-      onStep(step) {
-        recordAgentStep(step);
-        job.onStep?.(step);
-      },
-      onLLMCall(call) {
-        recordLlmCall(call);
-        job.onLLMCall?.(call);
-      },
-      onAgentPlan(items) {
-        span.addEvent("talos.agent.plan.updated", {
-          "talos.plan.items": items.length,
-          "talos.plan.completed": items.filter((item) => item.status === "done").length,
-          "talos.plan.failed": items.filter((item) => item.status === "failed").length,
-        });
-        job.onAgentPlan?.(items);
-      },
-      onActivity(activity) {
-        span.addEvent("talos.agent.activity", {
-          "talos.activity.kind": activity.kind,
-        }, activity.at);
-        job.onActivity?.(activity);
-      },
-    });
+    try {
+      const result = await runOrchestratedJobBase(storage, {
+        ...job,
+        onStep(step) {
+          recordAgentStep(step);
+          job.onStep?.(step);
+        },
+        onLLMCall(call) {
+          recordLlmCall(call);
+          job.onLLMCall?.(call);
+        },
+        onAgentPlan(items) {
+          span.addEvent("talos.agent.plan.updated", {
+            "talos.plan.items": items.length,
+            "talos.plan.completed": items.filter((item) => item.status === "done").length,
+            "talos.plan.failed": items.filter((item) => item.status === "failed").length,
+          });
+          job.onAgentPlan?.(items);
+        },
+        onActivity(activity) {
+          span.addEvent("talos.agent.activity", {
+            "talos.activity.kind": activity.kind,
+          }, activity.at);
+          job.onActivity?.(activity);
+        },
+      });
 
-    recordRunResult(telemetry, result, span);
-    span.addEvent("talos.run.completed", {
-      "talos.run.status": result.status,
-      "talos.run.steps": result.stepsDetail.length,
-      "talos.run.bugs": result.bugsFound.length,
-      "talos.run.llm_calls": result.llmCalls.length,
-    });
-    return result;
+      recordRunResult(telemetry, result, span);
+      span.addEvent("talos.run.completed", {
+        "talos.run.status": result.status,
+        "talos.run.steps": result.stepsDetail.length,
+        "talos.run.bugs": result.bugsFound.length,
+        "talos.run.llm_calls": result.llmCalls.length,
+      });
+      return result;
+    } catch (error) {
+      recordRunResult(telemetry, { status: "failed" }, span);
+      span.addEvent("talos.run.crashed", {
+        "error.type": error instanceof Error ? error.name : "Error",
+      });
+      throw error;
+    }
   });
 }
