@@ -10,6 +10,7 @@
     "build:libs": "npm run build --workspace=@talos/engine --workspace=@talos/db",
     "postinstall": "npm run build:libs",
     "dev": "VIDEOS_DIR=$PWD/data/videos SCREENSHOTS_DIR=$PWD/data/screenshots concurrently --names api,worker,web --prefix-colors cyan,yellow,magenta \"PORT=11114 npm run dev:api\" \"PORT=11114 npm run dev:worker\" \"npm run dev:web\"",
+    "dev:observed": "node scripts/dev-observed.mjs",
     "dev:api": "npm run dev --workspace=apps/api",
     "dev:worker": "npm run dev --workspace=apps/worker",
     "dev:web": "npm run dev --workspace=apps/web",
@@ -20,6 +21,10 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.79.0"
   },
   "devDependencies": {
     "concurrently": "^10.0.3"
