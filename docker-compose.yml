@@ -1,3 +1,17 @@
+x-otel-environment: &otel-environment
+  NODE_OPTIONS: "--require @opentelemetry/auto-instrumentations-node/register"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-http://host.docker.internal:4318}"
+  OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
+  OTEL_TRACES_EXPORTER: "otlp"
+  OTEL_METRICS_EXPORTER: "otlp"
+  OTEL_LOGS_EXPORTER: "otlp"
+  OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE: "delta"
+  OTEL_NODE_RESOURCE_DETECTORS: "env,host,os,process,container"
+  OTEL_RESOURCE_ATTRIBUTES: "service.namespace=talos,service.version=${TALOS_VERSION:-dev},deployment.environment.name=${TALOS_ENVIRONMENT_NAME:-development}"
+  OTEL_LOG_LEVEL: "${OTEL_LOG_LEVEL:-info}"
+  TALOS_VERSION: "${TALOS_VERSION:-dev}"
+  TALOS_ENVIRONMENT_NAME: "${TALOS_ENVIRONMENT_NAME:-development}"
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -34,6 +48,8 @@ services:
     ports:
       - "11111:11111"
     environment:
+      <<: *otel-environment
+      OTEL_SERVICE_NAME: "talos-api"
       DATABASE_URL: postgresql://talos:talos@postgres:5432/talos
       REDIS_URL: redis://redis:6379
       PORT: 11111
@@ -71,6 +87,8 @@ services:
       dockerfile: Dockerfile
     command: ["node", "apps/worker/dist/worker.js"]
     environment:
+      <<: *otel-environment
+      OTEL_SERVICE_NAME: "talos-worker"
       DATABASE_URL: postgresql://talos:talos@postgres:5432/talos
       REDIS_URL: redis://redis:6379
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
