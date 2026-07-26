@@ -5,6 +5,7 @@ x-otel-environment: &otel-environment
   OTEL_TRACES_EXPORTER: "otlp"
   OTEL_METRICS_EXPORTER: "otlp"
   OTEL_LOGS_EXPORTER: "otlp"
+  OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT: "false"
   OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE: "delta"
   OTEL_NODE_RESOURCE_DETECTORS: "env,host,os,process,container"
   OTEL_RESOURCE_ATTRIBUTES: "service.namespace=talos,service.version=${TALOS_VERSION:-dev},deployment.environment.name=${TALOS_ENVIRONMENT_NAME:-development}"
