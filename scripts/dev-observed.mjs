@@ -52,6 +52,19 @@ const children = [
   }),
 ];
 
+if (process.env.TALOS_OBSERVE_SLACK === "true") {
+  children.push(
+    spawn(npmCommand, ["run", "dev:slack"], {
+      stdio: "inherit",
+      env: {
+        ...process.env,
+        ...commonOtel,
+        OTEL_SERVICE_NAME: "talos-slack-agent",
+      },
+    }),
+  );
+}
+
 let shuttingDown = false;
 function shutdown(signal = "SIGTERM") {
   if (shuttingDown) return;
