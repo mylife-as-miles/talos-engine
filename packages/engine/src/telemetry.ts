@@ -104,7 +104,7 @@ function runSpanAttributes(info: TalosRunTelemetry): Attributes {
     ...(info.testId ? { "talos.test.id": info.testId } : {}),
     "deployment.environment.name": stringValue(info.environmentName),
     "talos.trigger.type": stringValue(info.triggerRef),
-    ...(targetHost ? { "server.address": targetHost } : {}),
+    ...(targetHost ? { "talos.target.host": targetHost } : {}),
   };
 }
 
