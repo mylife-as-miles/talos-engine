@@ -1,180 +1,261 @@
-# Talos Test Cloud Agent
+# Talos Observability
 
-Agentic QA orchestration for UiPath Test Cloud.
+<p align="center">
+  <strong>The black-box recorder for autonomous browser-testing agents.</strong>
+</p>
 
-Talos runs browser-based testing agents against real web applications, captures
-evidence-rich execution traces, and prepares those results for UiPath Test
-Cloud / Test Manager so agentic QA can live inside an enterprise-governed
-testing workflow.
+<p align="center">
+  Talos correlates every API request, queue transition, browser action, LLM call,
+  network failure, bug, token, cost, log, and run outcome in SigNoz through
+  OpenTelemetry.
+</p>
 
-## Why Talos Exists
+<p align="center">
+  <img alt="Agents of SigNoz" src="https://img.shields.io/badge/Agents%20of%20SigNoz-AI%20%26%20Agent%20Observability-7C3AED" />
+  <img alt="OpenTelemetry" src="https://img.shields.io/badge/OpenTelemetry-Instrumented-F5A800" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-Node.js-3178C6" />
+  <img alt="Status" src="https://img.shields.io/badge/Status-Hackathon%20Build-16A34A" />
+</p>
 
-Modern teams ship faster than traditional manual QA can comfortably follow.
-AI agents can explore software quickly, but raw autonomous browser sessions are
-not enough for enterprise testing. Teams need traceability, evidence, review,
-repeatability, and a clear place where test outcomes are governed.
+## Hackathon submission
 
-Talos was built around that gap.
+**Event:** Agents of SigNoz  
+**Track:** AI & Agent Observability  
+**Project:** Talos Observability
 
-It gives testers a browser agent that can log in, navigate flows, observe page
-state, record steps, and surface issues, while keeping UiPath Test Cloud as the
-enterprise testing layer that owns execution context, test sets, review, and
-governance.
+> Talos turns autonomous browser tests into fully observable distributed
+> workflows. When an agent fails, engineers can move from a generic “blocked”
+> result to an evidence-backed explanation spanning the initiating request,
+> queue, worker, browser, LLM provider, target application, database, logs,
+> metrics, and traces.
 
-## What It Does
+- [Hackathon project brief](AGENTS_OF_SIGNOZ.md)
+- [Complete SigNoz setup and operations runbook](docs/signoz-observability.md)
+- [SigNoz documentation](https://signoz.io/docs/introduction/)
+- [SigNoz Agent Skills](https://github.com/SigNoz/agent-skills)
 
-Talos lets you describe a test goal in plain language, then turns that goal into
-a live browser test run.
+## The problem
 
-It can:
+AI browser agents are difficult to debug because a single user-visible test can
+cross several independent systems:
 
-- Launch a real browser against a target application.
-- Authenticate through configured login flows.
-- Navigate screens using semantic page understanding.
-- Capture step-by-step execution evidence.
-- Record LLM calls, costs, screenshots, observations, and issues.
-- Stream live run progress to the web dashboard.
-- Preserve run history for review and debugging.
-- Publish completed run artifacts for UiPath Test Cloud handoff.
+1. A dashboard, Slack agent, or MCP client starts the test.
+2. A Fastify API validates the request and publishes a BullMQ job.
+3. Redis delivers the job to a separate worker process.
+4. The worker launches Playwright or Stagehand.
+5. Navigator, review, triage, and memory agents call one or more LLM providers.
+6. Browser actions trigger APIs inside the application under test.
+7. PostgreSQL persists steps, evidence, bugs, costs, and final results.
 
-Talos is especially useful for:
+Without cross-service observability, a failed run rarely reveals whether the
+root cause was queue delay, an LLM error, a browser-action failure, an HTTP 500
+from the target application, a database problem, or resource pressure.
 
-- Exploratory QA.
-- Smoke testing.
-- Flow discovery.
-- Regression test drafting.
-- AI-assisted test triage.
-- Human-in-the-loop quality review.
-- UiPath AgentHack Track 3 submissions focused on Test Cloud.
+## The solution
 
-## UiPath Test Cloud Focus
+Talos emits standard OpenTelemetry traces, metrics, and correlated logs to
+SigNoz. Each test becomes a navigable distributed workflow instead of a set of
+disconnected application records.
 
-Talos is designed for **UiPath AgentHack Track 3: UiPath Test Cloud**.
+```mermaid
+flowchart LR
+    U[Dashboard / Slack / MCP client] --> S[ Talos MCP ]
+    S --> A[ talos-api ]
+    A --> Q[ BullMQ / Redis ]
+    Q --> W[ talos-worker ]
+    W --> B[ Playwright / Stagehand ]
+    W --> L[ LLM providers ]
+    W --> D[ PostgreSQL ]
+    B --> T[ Application under test ]
 
-The core idea is simple:
-
-**Talos supplies the agentic browser-testing layer. UiPath Test Cloud supplies
-the enterprise execution, orchestration, and governance layer.**
-
-When a Talos run completes, the worker can generate UiPath-ready artifacts under
-`data/uipath-test-cloud/<runId>/`, including:
-
-- `talos-run.json` with run metadata, intent, steps, issue counts, model usage,
-  cost, environment, and evidence references.
-- `uipath-input.json` with Test Manager parameter overrides such as
-  `TalosRunPayload`, `TalosRunId`, status fields, and issue counts.
-- `talos-junit.xml` for systems that consume JUnit-style pass/fail output.
-- CLI logs from the UiPath Test Cloud handoff attempt.
-
-This means Talos does not treat an AI agent run as a disposable demo. It turns
-the run into structured testing evidence that can be associated with a UiPath
-Test Manager project, test set, and test case workflow.
-
-## How The Workflow Fits Together
-
-1. A tester creates or selects a Talos project.
-2. The tester configures an environment, target URL, and optional credentials.
-3. The tester describes the desired test flow in natural language.
-4. Talos creates a run and queues it for the worker.
-5. The worker launches a browser and executes the agentic test.
-6. The agent observes the application, performs actions, and records evidence.
-7. Talos streams progress to the dashboard while persisting durable run data.
-8. A human reviewer inspects the run, steps, screenshots, and issues.
-9. Talos prepares UiPath Test Cloud artifacts for governed test execution.
-10. UiPath Test Cloud becomes the control layer for enterprise QA visibility.
-
-## Key Features
-
-### Agentic Browser Testing
-
-- Natural-language test goals.
-- Real browser execution through Playwright.
-- Authenticated application testing.
-- Step-by-step reasoning and execution traces.
-- DOM and accessibility-tree informed navigation.
-- Screenshot and visual evidence support.
-
-### Human Review
-
-- Run detail timeline.
-- Live progress panel.
-- Captured LLM calls.
-- Cost tracking.
-- Issue review.
-- Run history.
-- Evidence-first debugging when a flow is blocked.
-
-### UiPath Test Cloud Handoff
-
-- Optional UiPath publishing after a run completes.
-- Test Manager project/test set configuration.
-- Modern, legacy, and custom UiPath CLI modes.
-- Generated JSON and JUnit artifacts.
-- Manual or automated execution mode.
-- Async or blocking execution depending on `UIPATH_TEST_CLOUD_WAIT`.
-
-### Enterprise-Oriented Architecture
-
-- API and worker are separated.
-- Runs execute through a Redis-backed queue.
-- PostgreSQL stores durable project, environment, test, and run data.
-- Live progress is streamed while historical data remains reviewable.
-- Model settings can be configured through the dashboard.
-
-## Tech Stack
-
-- **Frontend:** React, TypeScript, Vite.
-- **API:** Fastify, TypeScript.
-- **Worker:** BullMQ, Redis, Playwright, TypeScript.
-- **Database:** PostgreSQL.
-- **LLM providers:** OpenRouter, OpenAI, Anthropic, Google Gemini.
-- **Testing orchestration target:** UiPath Test Cloud / Test Manager.
-- **Automation interface:** MCP server and TypeScript client package.
-
-## Repository Layout
-
-```text
-apps/
-  api/        Fastify API server
-  web/        React dashboard
-  worker/     Background run executor
-
-packages/
-  client/     TypeScript HTTP client
-  db/         PostgreSQL storage adapter and migrations
-  engine/     Agent loop, browser automation, review, memory, orchestration
-  mcp/        Model Context Protocol server
-  talos/      CLI setup package
+    A -. OTLP .-> Z[ SigNoz ]
+    Q -. trace context .-> W
+    W -. OTLP .-> Z
+    S -. OTLP .-> Z
+    Z --> M[ SigNoz MCP ]
+    M --> I[ Evidence-backed investigation ]
 ```
 
-## Quick Start
+SigNoz provides the operational layer for:
+
+- End-to-end traces from API ingestion through queue processing and agent execution.
+- Correlated application logs with trace and span context.
+- Agent, LLM, token, cost, network, and QA metrics.
+- Query Builder analysis across traces, metrics, and logs.
+- Dashboards for run health, LLM operations, and QA reliability.
+- Alerts for failures, stalls, latency degradation, cost spikes, and missing telemetry.
+- MCP-assisted investigations grounded in live observability data.
+
+## Why Talos and SigNoz work well together
+
+| Talos signal | What SigNoz reveals |
+|---|---|
+| API request | Who started the run, when it was accepted, and how long enqueueing took |
+| BullMQ job | Queue publish, wait, processing, completion, and failure relationships |
+| Browser-agent lifecycle | Total run duration, outcome, actions, plans, and review stages |
+| LLM call | Provider, model, agent role, latency, tokens, cost, retries, and errors |
+| Browser network failure | The action that triggered the request and the returned status code |
+| PostgreSQL and Redis operations | Storage and queue dependencies inside the same trace |
+| Pino log | Human-readable diagnostics correlated with the active trace and run |
+| QA result | Bug type, source, severity, and the run that produced it |
+
+The goal is not simply to “send logs to a dashboard.” The goal is to preserve
+causality across the complete autonomous-agent workflow.
+
+## Observable execution model
+
+A representative run appears as one connected trace:
+
+```text
+talos.agent.run
+├── Fastify request and route spans
+├── BullMQ publish
+├── BullMQ process
+├── environment preflight
+├── browser launch
+├── agent navigation
+│   ├── gen_ai.chat
+│   ├── browser action event
+│   ├── HTTP request
+│   └── network-error event
+├── filmstrip review
+├── holistic review
+├── bug triage
+├── memory curation
+├── PostgreSQL persistence
+└── run completion
+```
+
+### Service identities
+
+Talos uses separate OpenTelemetry service identities so SigNoz can display the
+actual system topology:
+
+- `talos-api`
+- `talos-worker`
+- `talos-slack-agent` when enabled
+- `talos-mcp` for the MCP child process
+
+## Custom telemetry
+
+### Metrics
+
+| Metric | Type | Unit | Purpose |
+|---|---|---:|---|
+| `talos.agent.runs.active` | UpDownCounter | `{run}` | Runs currently executing |
+| `talos.agent.runs` | Counter | `{run}` | Completed runs by status, environment, and trigger |
+| `talos.agent.run.duration` | Histogram | `s` | End-to-end run duration |
+| `talos.agent.steps` | Counter | `{step}` | Browser steps by action, status, source, and execution method |
+| `talos.gen_ai.calls` | Counter | `{call}` | LLM calls by provider, model, agent, and status |
+| `talos.gen_ai.call.duration` | Histogram | `s` | LLM call latency |
+| `talos.gen_ai.tokens` | Counter | `{token}` | Input and output token consumption |
+| `talos.gen_ai.cost` | Counter | `{USD}` | Estimated model cost |
+| `talos.browser.network.errors` | Counter | `{error}` | Action-correlated browser API failures |
+| `talos.qa.bugs` | Counter | `{bug}` | Bugs by type, severity, and source |
+
+### Trace events
+
+Talos records bounded operational events for:
+
+- Run start, completion, and crash.
+- Agent-plan updates.
+- Browser-agent steps.
+- Agent activity.
+- Browser network failures.
+- LLM calls and failures.
+- Final run outcome and evidence counts.
+
+### Cardinality policy
+
+High-cardinality identifiers such as `runId`, `projectId`, `testId`, and step
+index are useful during investigation, so they are attached to spans and logs.
+They are intentionally excluded from metric labels.
+
+## Core product capabilities
+
+Talos remains a complete agentic QA platform in addition to its SigNoz
+observability layer.
+
+### Autonomous browser testing
+
+- Natural-language testing goals.
+- Real browser execution with Playwright.
+- Semantic element interaction through Stagehand.
+- Authenticated application testing.
+- DOM, accessibility-tree, and screenshot-informed navigation.
+- Action-correlated browser network monitoring.
+- Flow discovery and exploratory QA.
+
+### Multi-agent analysis
+
+- Navigator agent for browser execution.
+- Filmstrip and holistic visual review.
+- Bug-triage agent.
+- Flow-discovery agent.
+- Project memory curation.
+- Multiple model providers through OpenAI, Anthropic, Gemini, and OpenRouter.
+
+### Evidence and governance
+
+- Live run streaming.
+- Step-by-step execution history.
+- Screenshots and video recording.
+- LLM usage and estimated cost records.
+- Durable PostgreSQL persistence.
+- Human review and bug management.
+- Talos MCP server and TypeScript client.
+- Slack Release Commander.
+- Optional UiPath Test Cloud export.
+
+## Demo scenario
+
+The recommended hackathon demonstration uses one controlled checkout failure:
+
+1. Start a checkout test from the Talos dashboard, Slack agent, or Talos MCP.
+2. `talos-api` accepts the request and publishes a BullMQ job.
+3. The active OpenTelemetry context follows the job into `talos-worker`.
+4. The worker launches the browser agent and calls the configured LLM provider.
+5. The target checkout API intentionally returns HTTP 500 during payment.
+6. Talos records the action-correlated network failure and marks the run blocked or failed.
+7. A SigNoz alert identifies the failure condition.
+8. SigNoz MCP investigates the trace, logs, metrics, slow operations, token usage, and related runs.
+9. The final report explains the likely cause and cites the observable evidence behind the conclusion.
+
+This demonstrates the complete loop:
+
+```text
+instrumented agent execution
+        ↓
+cross-signal detection in SigNoz
+        ↓
+alert and dashboard visibility
+        ↓
+MCP-assisted investigation
+        ↓
+evidence-backed root-cause report
+```
+
+## Quick start
 
 ### Prerequisites
 
 - Node.js 20 or newer.
-- Docker Desktop.
-- At least one LLM API key.
-- UiPath CLI access if enabling Test Cloud publishing.
+- Docker and Docker Compose.
+- [SigNoz Foundry](https://github.com/SigNoz/foundry).
+- At least one supported LLM API key.
+- At least 4 GB of memory available to the SigNoz deployment.
 
-### 1. Install Dependencies
+For Windows development, run the SigNoz stack with Docker Engine inside WSL 2.
 
-```bash
-npm install
-```
-
-### 2. Start Postgres And Redis
+### 1. Clone and configure Talos
 
 ```bash
-docker compose up postgres redis -d
-```
-
-### 3. Configure Environment
-
-```bash
+git clone https://github.com/mylife-as-miles/talos-engine.git
+cd talos-engine
 cp .env.example .env
 ```
 
-Add at least one model provider key:
+Add at least one provider key to `.env`:
 
 ```bash
 OPENROUTER_API_KEY=
@@ -183,240 +264,313 @@ ANTHROPIC_API_KEY=
 GEMINI_API_KEY=
 ```
 
-OpenRouter is the simplest option because it can route to multiple model
-families from one key. Direct provider keys also work.
+OpenRouter is the simplest way to access several model families with one key.
+Direct provider keys also work.
 
-### 4. Run Migrations
+### 2. Finalize and validate the SigNoz build
 
 ```bash
+npm run signoz:finalize
+```
+
+This command:
+
+- Installs dependencies.
+- Regenerates `package-lock.json`.
+- Builds every workspace.
+- Validates `casting.yaml`.
+- Generates the reproducible Foundry `casting.yaml.lock`.
+
+### 3. Deploy SigNoz and its MCP server
+
+```bash
+foundryctl cast -f casting.yaml
+```
+
+Expected local endpoints:
+
+| Service | URL |
+|---|---|
+| SigNoz UI | `http://localhost:8080` |
+| OTLP gRPC | `http://localhost:4317` |
+| OTLP HTTP | `http://localhost:4318` |
+| SigNoz MCP | `http://localhost:8000/mcp` |
+
+### 4. Start Talos dependencies
+
+```bash
+docker compose up postgres redis -d
 npm run migrate
 ```
 
-### 5. Start The App
+### 5. Start Talos with observability enabled
 
 ```bash
-npm run dev
+npm run dev:observed
 ```
 
-The dashboard runs at:
+The observed launcher starts the API, worker, and web application with distinct
+service names and loads OpenTelemetry before application modules are imported.
+
+| Service | URL |
+|---|---|
+| Talos dashboard | `http://localhost:11111` |
+| Talos development API | `http://localhost:11114` |
+
+To include the Slack agent and its Talos MCP child process:
+
+```bash
+TALOS_OBSERVE_SLACK=true npm run dev:observed
+```
+
+### Dockerized Talos option
+
+The Talos Docker Compose configuration sends OTLP HTTP data to
+`host.docker.internal:4318` by default:
+
+```bash
+docker compose up --build
+```
+
+Override the collector endpoint when necessary:
+
+```bash
+OTEL_EXPORTER_OTLP_ENDPOINT=http://collector.example:4318 docker compose up --build
+```
+
+## Verify ingestion in SigNoz
+
+Run one short Talos test before creating dashboards or alerts. Then verify:
+
+1. `talos-api` and `talos-worker` appear in the Services view.
+2. A `talos.agent.run` trace is present for the worker.
+3. The trace includes BullMQ producer and consumer activity.
+4. PostgreSQL, Redis, HTTP, and LLM operations appear beneath the run.
+5. Pino logs contain trace and span context.
+6. Metrics beginning with `talos.` are discoverable.
+7. A failed browser request appears as a network-error event.
+
+Always discover live field names independently for traces, logs, and metrics
+before building Query Builder expressions. A field present on one signal is not
+guaranteed to exist on another.
+
+## Recommended SigNoz dashboard
+
+Create a custom dashboard after telemetry is flowing.
+
+### Run health
+
+- Active runs.
+- Completed runs by outcome.
+- Success and failure ratio.
+- P50, P95, and P99 run duration.
+- Queue publish and processing latency.
+
+### Agent execution
+
+- Steps by browser action.
+- Failed steps by action type.
+- Stagehand, Playwright, and coordinate execution split.
+- Recent run traces with environment and outcome.
+
+### LLM operations
+
+- Calls by provider, model, and agent role.
+- P50, P95, and P99 model latency.
+- Input and output tokens.
+- Estimated model cost over time.
+- LLM error rate.
+
+### QA reliability
+
+- Network failures by status and severity.
+- Bugs by severity, type, and source.
+- Worker error-log trend.
+- Recent failed runs linked to traces.
+
+For low-volume, human-paced counters, prefer per-interval `increase` views over
+tiny per-second rates.
+
+## Recommended alerts
+
+Create alert rules only after confirming that the exact signal and resource
+filter emit live data.
+
+| Alert | Initial condition | Severity |
+|---|---|---|
+| Run failure rate | Failed runs exceed 20% over 10 minutes | Critical |
+| Stalled run | Active run has no progress or completion signal for 5 minutes | Critical |
+| LLM error rate | Failed model calls exceed 10% over 5 minutes | Warning |
+| LLM latency degradation | P95 exceeds the observed baseline | Warning |
+| Model-cost spike | Cost increase exceeds the selected budget | Warning |
+| Browser API failures | Repeated high-severity failures within 5 minutes | Warning |
+| Missing telemetry | API or worker data stops arriving | Critical in production |
+
+Alert annotations should include the resource scope, current value, threshold,
+owning team, and a real runbook link.
+
+## SigNoz MCP workflow
+
+The MCP server is an investigation and control interface, not the telemetry
+transport. Talos sends telemetry through OTLP; SigNoz MCP queries the resulting
+traces, metrics, logs, dashboards, and alerts.
+
+1. Create a least-privilege SigNoz service account.
+2. Create an API key for that account.
+3. Store the key in the MCP client secret store or request header.
+4. Connect the client to `http://localhost:8000/mcp`.
+5. Install the official [SigNoz Agent Skills](https://github.com/SigNoz/agent-skills).
+6. Use Talos MCP to start or inspect a run and SigNoz MCP to investigate it.
+
+Example investigation request:
 
 ```text
-http://localhost:11111
+Investigate Talos run <run-id>. Find its talos.agent.run trace, identify the
+slowest agent, LLM, browser, queue, and storage operations, correlate error logs
+and network-error events, compare the run with recent successful runs in the
+same environment, and return evidence-backed likely causes.
 ```
 
-In local development, the API usually runs on:
+API keys are never stored in `casting.yaml` or committed to the repository.
+
+## Privacy and security
+
+Talos exports operational metadata, not testing content.
+
+The default configuration explicitly disables GenAI message-content capture:
+
+```bash
+OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=false
+```
+
+Custom telemetry does not intentionally include:
+
+- Authentication credentials, tokens, cookies, or TOTP secrets.
+- LLM prompts, complete responses, or tool arguments.
+- Screenshots, videos, DOM content, or accessibility trees.
+- User-provided form values.
+- API keys or service-account credentials.
+- Full target URLs containing query strings or fragments.
+
+Detailed testing evidence remains inside Talos’s existing application storage.
+
+## Architecture and repository layout
 
 ```text
-http://localhost:11114
+apps/
+  api/              Fastify API and run enqueueing
+  web/              React and Vite dashboard
+  worker/           BullMQ worker and run persistence
+  slack-agent/      Slack Release Commander
+
+packages/
+  client/           TypeScript Talos API client
+  db/               PostgreSQL adapter and migrations
+  engine/           Browser agent, review agents, memory, and OTel domain signals
+  mcp/              Talos Model Context Protocol server
+  talos/            CLI setup package
+
+scripts/
+  otel-register.cjs OpenTelemetry preload registration
+  dev-observed.mjs  Multi-service observed development launcher
+  finalize-signoz.sh Build and Foundry finalization
+
+casting.yaml        Reproducible SigNoz + MCP deployment definition
 ```
 
-## Recommended Demo Flow
-
-For a reliable UiPath AgentHack demo, use a short, controlled testing intent
-instead of a broad autonomous crawl.
-
-Example:
-
-```text
-Log in, open Dashboard, open Chat, open Roles, observe each page, then finish.
-```
-
-This demonstrates the important pieces:
-
-- Talos can launch a browser.
-- Talos can authenticate.
-- Talos can navigate real app screens.
-- Talos can capture evidence.
-- Talos can preserve step-by-step run history.
-- Talos can prepare results for UiPath Test Cloud.
-
-Avoid very broad prompts like "discover the entire application" during a short
-demo. They are useful for exploration, but they can take longer and may get
-stuck inside dynamic application behavior.
-
-## UiPath Test Cloud Setup
-
-Enable UiPath publishing in `.env`:
-
-```bash
-UIPATH_TEST_CLOUD_ENABLED=true
-UIPATH_TEST_CLOUD_MODE=modern
-UIPATH_CLI_PATH=uip
-UIPATH_TEST_CLOUD_PROJECT_KEY=<your-project-key>
-UIPATH_TEST_CLOUD_TEST_SET_KEY=<your-test-set-key>
-UIPATH_TEST_CLOUD_EXECUTION_TYPE=manual
-UIPATH_TEST_CLOUD_WAIT=false
-UIPATH_TEST_CLOUD_EXTRA_ARGS="--profile <your-uipath-profile>"
-```
-
-### Modern Mode
-
-Modern mode uses the current UiPath CLI:
-
-```bash
-UIPATH_TEST_CLOUD_MODE=modern
-UIPATH_CLI_PATH=uip
-```
-
-Talos invokes the configured UiPath CLI with a Test Manager test-set execution
-command and passes the generated Talos payload through an input file.
-
-Use this mode for current UiPath Automation Cloud / Test Cloud environments.
-
-### Legacy Mode
-
-If your environment uses the older `uipcli`, configure:
-
-```bash
-UIPATH_TEST_CLOUD_MODE=legacy
-UIPATH_CLI_PATH=uipcli
-UIPATH_ORCHESTRATOR_URL=https://cloud.uipath.com/<account>/<tenant>/orchestrator_
-UIPATH_ORCHESTRATOR_TENANT=<tenant-name>
-UIPATH_TEST_CLOUD_PROJECT_KEY=<your-project-key>
-UIPATH_TEST_CLOUD_TEST_SET_KEY=<your-test-set-key>
-```
-
-### Custom Mode
-
-If your UiPath Labs tenant needs custom CLI syntax:
-
-```bash
-UIPATH_TEST_CLOUD_MODE=custom
-UIPATH_TEST_CLOUD_ARGS='tm testsets run --test-set-key {testSetKey} --input-path {inputPath}'
-```
-
-Supported placeholders include:
-
-- `{inputPath}`
-- `{payloadPath}`
-- `{junitPath}`
-- `{resultPath}`
-- `{runId}`
-- `{status}`
-- `{projectKey}`
-- `{testSetKey}`
-- `{tenant}`
-- `{orchestratorUrl}`
-
-## Important Configuration
+## Important environment variables
 
 | Variable | Purpose |
 |---|---|
-| `DATABASE_URL` | PostgreSQL connection string. |
-| `REDIS_URL` | Redis connection string for the run queue and live state. |
-| `OPENROUTER_API_KEY` | Recommended provider key for routing to multiple models. |
-| `OPENAI_API_KEY` | Direct OpenAI model access. |
-| `ANTHROPIC_API_KEY` | Direct Anthropic model access. |
-| `GEMINI_API_KEY` | Direct Google Gemini model access. |
-| `AGENT_MODEL` | Model used by the browser navigator. |
-| `AUXILIARY_MODEL` | Model used for planning, discovery, memory, and summaries. |
-| `REVIEW_AGENT_MODEL` | Model used for post-run review. |
-| `STAGEHAND_ENABLED` | Enables semantic element finding support. |
-| `RUN_TIMEOUT_MINUTES` | Maximum wall-clock runtime for a test. |
-| `UIPATH_TEST_CLOUD_ENABLED` | Enables UiPath Test Cloud handoff. |
-| `UIPATH_TEST_CLOUD_MODE` | `modern`, `legacy`, or `custom`. |
-| `UIPATH_CLI_PATH` | UiPath CLI executable path or command. |
-| `UIPATH_TEST_CLOUD_PROJECT_KEY` | UiPath Test Manager project key. |
-| `UIPATH_TEST_CLOUD_TEST_SET_KEY` | UiPath Test Cloud/Test Manager test set key. |
-| `UIPATH_TEST_CLOUD_WAIT` | Whether Talos waits for the UiPath execution to finish. |
+| `DATABASE_URL` | PostgreSQL connection string |
+| `REDIS_URL` | BullMQ and live-run Redis connection |
+| `OPENROUTER_API_KEY` | OpenRouter model access |
+| `OPENAI_API_KEY` | Direct OpenAI access |
+| `ANTHROPIC_API_KEY` | Direct Anthropic access |
+| `GEMINI_API_KEY` | Direct Gemini access |
+| `AGENT_MODEL` | Browser navigator model |
+| `AUXILIARY_MODEL` | Planning, discovery, memory, and summaries |
+| `REVIEW_AGENT_MODEL` | Post-run review model |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP HTTP collector endpoint |
+| `OTEL_SERVICE_NAME` | Service identity reported to SigNoz |
+| `TALOS_ENVIRONMENT_NAME` | Deployment environment resource value |
+| `TALOS_OBSERVE_SLACK` | Starts the optional observed Slack agent |
+| `RUN_TIMEOUT_MINUTES` | Maximum browser-run duration |
 
-Model settings can also be changed in the dashboard under **Settings**.
+See [`.env.example`](.env.example) for the complete configuration reference.
 
-## MCP Usage
-
-Talos includes an MCP server so coding agents and MCP-compatible tools can start
-tests, inspect runs, and triage issues without leaving the development
-environment.
-
-Example MCP configuration:
-
-```json
-{
-  "mcpServers": {
-    "talos": {
-      "command": "npx",
-      "args": ["-y", "@talosai/mcp"],
-      "env": {
-        "TALOS_BASE_URL": "http://localhost:11111"
-      }
-    }
-  }
-}
-```
-
-Available tool areas include:
-
-- Project and environment management.
-- Test execution.
-- Run detail inspection.
-- Bug triage.
-- Memory management.
-- Coverage and discovery workflows.
-
-## Development Commands
+## Development commands
 
 ```bash
-npm run dev
-npm run dev:api
-npm run dev:worker
-npm run dev:web
-npm run migrate
-npm run build
+npm run dev                 # Standard local development
+npm run dev:observed        # API, worker, and web with OpenTelemetry
+npm run dev:api             # API only
+npm run dev:worker          # Worker only
+npm run dev:web             # Web dashboard only
+npm run dev:slack           # Slack agent only
+npm run migrate             # Run PostgreSQL migrations
+npm run build               # Build all workspaces
+npm run test:slack          # Run Slack-agent tests
+npm run signoz:finalize     # Install, build, validate Foundry, and generate locks
 ```
 
-If Playwright reports that Chromium is missing, install the browser runtime:
+If Playwright reports that Chromium is missing:
 
 ```bash
 npx playwright install chromium
 ```
 
-## Troubleshooting
+## Hackathon development disclosure
 
-### A run is stuck on "launching browser"
+Talos existed before Agents of SigNoz as an agentic browser-testing platform.
+The following were built specifically for this hackathon branch:
 
-Install Playwright's browser runtime:
+- OpenTelemetry Node bootstrap and OTLP export.
+- Fastify route and handler instrumentation.
+- BullMQ producer-to-consumer context propagation.
+- Separate API, worker, Slack, and MCP service identities.
+- `talos.agent.run` lifecycle spans.
+- Provider-neutral GenAI spans.
+- Agent, LLM, cost, token, QA, and network metrics.
+- Agent-plan, browser-step, network-failure, completion, and crash events.
+- Explicit privacy and metric-cardinality controls.
+- Foundry deployment with SigNoz MCP enabled.
+- Dashboard, alert, IAM, investigation, and demo runbooks.
 
-```bash
-npx playwright install chromium
-```
+See [AGENTS_OF_SIGNOZ.md](AGENTS_OF_SIGNOZ.md) for the complete pre-existing
+foundation and hackathon-work breakdown.
 
-Then restart the worker.
+## Validation status
 
-### A broad discovery run stalls
+The source-level integration is implemented on the hackathon branch. Before a
+final submission or production merge, complete the following live checks:
 
-Use a smaller controlled flow for demos and first-time validation. Broad
-discovery can hit dynamic app states that take longer to resolve.
+- Run `npm run signoz:finalize` and commit the generated lockfiles.
+- Start a local SigNoz deployment through Foundry.
+- Execute one controlled passing run and one controlled failing run.
+- Confirm traces, metrics, and correlated logs in SigNoz.
+- Create dashboard panels from discovered live fields.
+- Create and validate the final alert rules.
+- Run one end-to-end MCP-assisted investigation.
 
-### The queue is blocked by an old run
+Generated lockfiles and successful live-ingestion results must be produced by a
+real networked environment; they should never be fabricated.
 
-Stop the run from the dashboard. If the worker is unresponsive, restart the
-worker and verify Redis queue state before starting a new run.
+## Built with
 
-### UiPath handoff does not appear
+- [SigNoz](https://signoz.io/)
+- [OpenTelemetry](https://opentelemetry.io/)
+- [SigNoz Foundry](https://github.com/SigNoz/foundry)
+- [SigNoz Agent Skills](https://github.com/SigNoz/agent-skills)
+- [Playwright](https://playwright.dev/)
+- [Stagehand](https://github.com/browserbase/stagehand)
+- [Fastify](https://fastify.dev/)
+- [BullMQ](https://bullmq.io/)
+- [PostgreSQL](https://www.postgresql.org/)
+- [Redis](https://redis.io/)
 
-Check:
+---
 
-- `UIPATH_TEST_CLOUD_ENABLED=true`
-- UiPath CLI is installed and authenticated.
-- `UIPATH_TEST_CLOUD_TEST_SET_KEY` is set.
-- The configured CLI profile can access the Test Manager project/test set.
-- `data/uipath-test-cloud/<runId>/` contains generated artifacts or CLI logs.
-
-## Hackathon Positioning
-
-Talos is a UiPath Test Cloud project because it focuses on agentic software
-testing.
-
-It shows how coding agents, browser agents, and LLM-based review can improve
-software QA while UiPath remains the enterprise control plane. The agent
-explores and validates the application, but the final value comes from turning
-that activity into governed Test Cloud evidence that a team can review,
-understand, and build on.
-
-## License
-
-Apache 2.0. See [LICENSE](LICENSE).
-
-## Slack Agent
-
-Talos Release Commander lives in [`apps/slack-agent`](apps/slack-agent/README.md). It lets teams start Talos browser tests, stream run progress, stop or rerun tests, and view evidence-backed results directly from Slack while all browser execution and evidence remain in Talos. See [`docs/SLACK_AGENT_ARCHITECTURE.md`](docs/SLACK_AGENT_ARCHITECTURE.md) for diagrams.
+<p align="center">
+  <strong>Talos makes autonomous browser agents observable, explainable, and operationally accountable.</strong>
+</p>
