@@ -1,0 +1,85 @@
+apiVersion: v1alpha1
+kind: Installation
+metadata:
+  name: signoz
+spec:
+  deployment:
+    flavor: compose
+    mode: docker
+  ingester:
+    spec:
+      cluster:
+        replicas: 1
+      config:
+        data:
+          ingester.yaml: "connectors:\n  signozmeter:\n    metrics_flush_interval: 1h\n    dimensions:\n      - name: service.name\n      - name: deployment.environment\n      - name: host.name\nreceivers:\n  otlp:\n    protocols:\n      grpc:\n        endpoint: \"0.0.0.0:4317\"\n      http:\n        endpoint: \"0.0.0.0:4318\"\nprocessors:\n  batch:\n    send_batch_size: 50000\n    send_batch_max_size: 55000\n    timeout: 5s\n  batch/meter:\n    send_batch_size: 20000\n    send_batch_max_size: 25000\n    timeout: 5s\n  signozspanmetrics/delta:\n    metrics_exporter: signozclickhousemetrics\n    metrics_flush_interval: 60s\n    latency_histogram_buckets:\n      - 100us\n      - 1ms\n      - 2ms\n      - 6ms\n      - 10ms\n      - 50ms\n      - 100ms\n      - 250ms\n      - 500ms\n      - 1000ms\n      - 1400ms\n      - 2000ms\n      - 5s\n      - 10s\n      - 20s\n      - 40s\n      - 60s\n    dimensions_cache_size: 100000\n    aggregation_temporality: AGGREGATION_TEMPORALITY_DELTA\n    enable_exp_histogram: true\n    dimensions:\n      - name: service.namespace\n        default: default\n      - name: deployment.environment\n        default: default\n      - name: signoz.collector.id\n      - name: service.version\nexporters:\n  clickhousetraces:\n    datasource: tcp://signoz-telemetrystore-clickhouse-0-0:9000/signoz_traces\n    low_cardinal_exception_grouping: ${env:LOW_CARDINAL_EXCEPTION_GROUPING}\n    use_new_schema: true\n    timeout: 45s\n    sending_queue:\n      enabled: false\n  signozclickhousemetrics:\n    dsn: tcp://signoz-telemetrystore-clickhouse-0-0:9000/signoz_metrics\n    timeout: 45s\n    sending_queue:\n      enabled: false\n  clickhouselogsexporter:\n    dsn: tcp://signoz-telemetrystore-clickhouse-0-0:9000/signoz_logs\n    use_new_schema: true\n    timeout: 45s\n    sending_queue:\n      enabled: false\n  signozclickhousemeter:\n    dsn: tcp://signoz-telemetrystore-clickhouse-0-0:9000/signoz_meter\n    timeout: 45s\n    sending_queue:\n      enabled: false\n  metadataexporter:\n    enabled: true\n    dsn: tcp://signoz-telemetrystore-clickhouse-0-0:9000/signoz_metadata\n    timeout: 45s\n    cache:\n      provider: in_memory\nextensions:\n  signoz_health_check:\n    endpoint: \"0.0.0.0:13133\"\n  pprof:\n    endpoint: \"0.0.0.0:1777\"\nservice:\n  telemetry:\n    logs:\n      encoding: json\n  extensions:\n    - signoz_health_check\n    - pprof\n  pipelines:\n    traces:\n      receivers:\n        - otlp\n      processors:\n        - signozspanmetrics/delta\n        - batch\n      exporters:\n        - clickhousetraces\n        - signozmeter\n        - metadataexporter\n    metrics:\n      receivers:\n        - otlp\n      processors:\n        - batch\n      exporters:\n        - signozclickhousemetrics\n        - signozmeter\n        - metadataexporter\n    logs:\n      receivers:\n        - otlp\n      processors:\n        - batch\n      exporters:\n        - clickhouselogsexporter\n        - signozmeter\n        - metadataexporter\n    metrics/meter:\n      receivers:\n        - signozmeter\n      processors:\n        - batch/meter\n      exporters:\n        - signozclickhousemeter\n"
+          opamp.yaml: 'server_endpoint: ws://signoz-signoz-0:4320/v1/opamp
+
+            '
+      enabled: true
+      env:
+        SIGNOZ_OTEL_COLLECTOR_TIMEOUT: 10m
+      image: signoz/signoz-otel-collector:latest
+      version: latest
+  mcp:
+    spec:
+      cluster:
+        replicas: 1
+      config: {}
+      enabled: true
+      env:
+        MCP_SERVER_PORT: '8000'
+        SIGNOZ_URL: http://signoz-signoz-0:8080
+        TRANSPORT_MODE: http
+      image: signoz/signoz-mcp-server:latest
+      version: latest
+  metastore:
+    kind: postgres
+    spec:
+      cluster:
+        replicas: 1
+      config: {}
+      enabled: true
+      env:
+        POSTGRES_DB: signoz
+        POSTGRES_PASSWORD: signoz
+        POSTGRES_USER: signoz
+      image: postgres:16
+      version: '16'
+  signoz:
+    spec:
+      cluster:
+        replicas: 1
+      config: {}
+      enabled: true
+      env:
+        SIGNOZ_SQLSTORE_POSTGRES_DSN: postgres://signoz:signoz@signoz-metastore-postgres-0:5432/signoz?sslmode=disable
+        SIGNOZ_SQLSTORE_PROVIDER: postgres
+        SIGNOZ_TELEMETRYSTORE_CLICKHOUSE_DSN: tcp://signoz-telemetrystore-clickhouse-0-0:9000
+        SIGNOZ_TELEMETRYSTORE_PROVIDER: clickhouse
+      image: signoz/signoz:latest
+      version: latest
+  telemetrykeeper:
+    kind: clickhousekeeper
+    spec:
+      cluster:
+        replicas: 1
+      config:
+        data:
+          keeper-0.yaml: "listen_host: 0.0.0.0\nlogger:\n  level: information\n  console: true\nkeeper_server:\n  four_letter_word_white_list: \"*\"\n  coordination_settings:\n    operation_timeout_ms: 10000\n    raft_logs_level: warning\n    session_timeout_ms: 30000\n    force_sync: false\n    snapshot_distance: 100000\n    snapshots_to_keep: 3\n  log_storage_path: /var/lib/clickhouse-keeper/coordination/log\n  raft_configuration:\n    server:\n    - hostname: signoz-telemetrykeeper-clickhousekeeper-0\n      port: 9234\n      id: 0\n  server_id: 0\n  snapshot_storage_path: /var/lib/clickhouse-keeper/coordination/snapshots\n  tcp_port: 9181\n"
+      enabled: true
+      image: clickhouse/clickhouse-keeper:25.12.5
+      version: 25.12.5
+  telemetrystore:
+    kind: clickhouse
+    spec:
+      cluster:
+        replicas: 0
+        shards: 1
+      config:
+        data:
+          config-0-0.yaml: "path: /var/lib/clickhouse/\ntmp_path: /var/lib/clickhouse/tmp/\nuser_files_path: /var/lib/clickhouse/user_files/\nformat_schema_path: /var/lib/clickhouse/format_schemas/\ndictionaries_config: '*_dictionary.xml'\ndisplay_name: cluster\ndistributed_ddl:\n    path: /clickhouse/task_queue/ddl\nhttp_port: 8123\ninterserver_http_port: 9009\nlisten_host: 0.0.0.0\nlogger:\n    console: 1\n    count: 10\n    formatting:\n        type: console\n    level: information\n    size: 1000M\nmacros:\n    replica: \"00\"\n    shard: \"00\"\nprofiles:\n    default:\n        allow_simdjson: 0\n        load_balancing: random\n        log_queries: 1\nquotas:\n    default:\n        interval:\n            duration: 3600\n            errors: 0\n            execution_time: 0\n            queries: 0\n            read_rows: 0\n            result_rows: 0\nuser_directories:\n  users_xml:\n    path: config-0-0.yaml\nremote_servers:\n  cluster:\n    shard:\n    - replica:\n          - host: signoz-telemetrystore-clickhouse-0-0\n            port: 9000\nzookeeper:\n  node:\n    - host: signoz-telemetrykeeper-clickhousekeeper-0\n      port: 9181\nquery_log:\n    flush_interval_milliseconds: 30000\n    partition_by: toYYYYMM(event_date)\n    ttl: \"event_date + INTERVAL 1 DAY DELETE\"\nquery_thread_log:\n    ttl: \"event_date + INTERVAL 1 DAY DELETE\"\nquery_metric_log:\n    ttl: \"event_date + INTERVAL 1 DAY DELETE\"\nquery_views_log:\n    ttl: \"event_date + INTERVAL 1 DAY DELETE\"\npart_log:\n    ttl: \"event_date + INTERVAL 1 DAY DELETE\"\nmetric_log:\n    flush_interval_milliseconds: 30000\n    ttl: \"event_date + INTERVAL 1 DAY DELETE\"\nasynchronous_metric_log:\n    ttl: \"event_date + INTERVAL 1 DAY DELETE\"\ntrace_log:\n    flush_interval_milliseconds: 30000\n    ttl: \"event_date + INTERVAL 1 DAY DELETE\"\nerror_log:\n    ttl: \"event_date + INTERVAL 1 DAY DELETE\"\nlatency_log:\n    ttl: \"event_date + INTERVAL 1 DAY DELETE\"\nprocessors_profile_log:\n    flush_interval_milliseconds: 30000\n    ttl: \"event_date + INTERVAL 1 DAY DELETE\"\nsession_log:\n    ttl: \"event_date + INTERVAL 1 DAY DELETE\"\ntext_log:\n    flush_interval_milliseconds: 30000\n    ttl: \"event_date + INTERVAL 1 DAY DELETE\"\nzookeeper_log:\n    ttl: \"event_date + INTERVAL 1 DAY DELETE\"\ntcp_port: 9000\nuser_defined_executable_functions_config: '*functions.yaml'\nuser_scripts_path: /var/lib/clickhouse/user_scripts/\nusers:\n    default:\n        access_management: 1\n        named_collection_control: 1\n        networks:\n            ip: ::/0\n        password: \"\"\n        profile: default\n        quota: default\n        show_named_collection: 1\n        show_named_collection_secrets: 1\n"
+          functions.yaml: "functions:\n  argument:\n      - name: buckets\n        type: Array(Float64)\n      - name: counts\n        type: Array(Float64)\n      - name: quantile\n        type: Float64\n  command: ./histogramQuantile\n  format: CSV\n  name: histogramQuantile\n  return_type: Float64\n  type: executable\n"
+      enabled: true
+      image: clickhouse/clickhouse-server:25.12.5
+      version: 25.12.5
