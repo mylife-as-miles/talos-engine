@@ -38,39 +38,45 @@ The application is backend-neutral. Talos emits standard OpenTelemetry over OTLP
 
 ## What is instrumented
 
-### Automatic Node instrumentation
+### Node and Fastify
 
-The API and worker preload `scripts/otel-register.cjs` before any application module. It registers the OpenTelemetry Node auto-instrumentation bundle for supported HTTP, OpenAI, PostgreSQL, Redis/ioredis, Pino, runtime, and other Node libraries.
+The API and worker preload `scripts/otel-register.cjs` before any application module. It registers:
+
+- The OpenTelemetry Node auto-instrumentation bundle for supported HTTP, OpenAI, PostgreSQL, Redis/ioredis, Pino, runtime, and other Node libraries.
+- Fastify's official `@fastify/otel` instrumentation for route and handler spans. Lifecycle-hook spans are disabled to keep traces readable, and `/health` is ignored.
+- BullMQ instrumentation for producer and consumer spans.
 
 ### BullMQ propagation
 
-The same preload registers `@appsignal/opentelemetry-instrumentation-bullmq` for BullMQ 5. The instrumentation emits messaging producer and consumer spans and propagates context through BullMQ's job metadata. Talos enables `useProducerSpanAsConsumerParent`, making the API enqueue and worker execution part of one distributed trace. This avoids copying trace fields into Talos's `RunJobData` and, importantly, avoids touching the job's authentication payload.
+`@appsignal/opentelemetry-instrumentation-bullmq` supports the BullMQ 5 version used by Talos. Talos enables `useProducerSpanAsConsumerParent`, making API enqueue and worker execution part of one distributed trace. Trace context remains in BullMQ's internal job metadata rather than being copied into Talos's `RunJobData`, so the application does not touch or duplicate the authentication payload.
 
 ### Talos domain instrumentation
 
-The observed orchestration wrapper emits a `talos.agent.run` span and the following custom metrics:
+The observed orchestration wrapper emits a `talos.agent.run` span and these metrics:
 
 | Metric | Type | Unit | Purpose |
 |---|---|---|---|
 | `talos.agent.runs.active` | UpDownCounter | `{run}` | Runs currently executing |
 | `talos.agent.runs` | Counter | `{run}` | Completed runs by status, environment, and trigger |
-| `talos.agent.run.duration` | Histogram | `ms` | End-to-end run duration |
+| `talos.agent.run.duration` | Histogram | `s` | End-to-end run duration |
 | `talos.agent.steps` | Counter | `{step}` | Browser steps by action, status, and method |
 | `talos.gen_ai.calls` | Counter | `{call}` | LLM calls by provider, model, agent, and status |
-| `talos.gen_ai.call.duration` | Histogram | `ms` | LLM latency |
+| `talos.gen_ai.call.duration` | Histogram | `s` | LLM latency |
 | `talos.gen_ai.tokens` | Counter | `{token}` | Input and output token volume |
-| `talos.gen_ai.cost` | Counter | `USD` | Estimated model cost |
+| `talos.gen_ai.cost` | Counter | `{USD}` | Estimated model cost |
 | `talos.browser.network.errors` | Counter | `{error}` | Action-correlated browser API failures |
 | `talos.qa.bugs` | Counter | `{bug}` | Bugs by severity, type, and source |
 
-High-cardinality values such as `runId`, `projectId`, and `testId` are attached to spans and logs only. They are intentionally excluded from metric dimensions.
+High-cardinality values such as `runId`, `projectId`, `testId`, and step index are attached to spans and logs only. They are intentionally excluded from metric dimensions.
 
 ## Privacy and security
 
-Telemetry must never contain:
+The shipped configuration explicitly sets `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=false`.
+
+Telemetry must not contain:
 
 - Authentication credentials, tokens, cookies, or TOTP secrets.
-- LLM prompts or complete responses.
+- LLM prompts, completions, or tool arguments.
 - Screenshots, DOM content, or accessibility trees.
 - User-provided form values.
 - API keys or service-account credentials.
@@ -88,7 +94,7 @@ foundryctl forge -f casting.yaml
 foundryctl cast -f casting.yaml
 ```
 
-`forge` writes `casting.yaml.lock`. Commit the generated lock file before hackathon submission so judges can reproduce the exact rendered deployment. Never hand-author or guess this file.
+`forge` writes `casting.yaml.lock`. Commit that generated lock file before hackathon submission so judges can reproduce the deployment. Never hand-author or guess it.
 
 Expected local endpoints:
 
@@ -96,8 +102,6 @@ Expected local endpoints:
 - OTLP gRPC: `http://localhost:4317`
 - OTLP HTTP: `http://localhost:4318`
 - SigNoz MCP: `http://localhost:8000/mcp`
-
-On Windows, run the SigNoz stack inside WSL 2 with a compatible Docker Engine setup.
 
 ## 2. Start Talos with telemetry
 
@@ -139,7 +143,7 @@ Recommended verification sequence:
 
 1. List services and confirm both names appear.
 2. Search traces for `service.name = talos-worker` and operation `talos.agent.run`.
-3. Confirm the trace includes BullMQ publish/process spans and downstream PostgreSQL, Redis, HTTP, and LLM spans.
+3. Confirm the trace includes Fastify request/handler spans, BullMQ publish/process spans, and downstream PostgreSQL, Redis, HTTP, and LLM spans.
 4. Search logs for the same trace ID and confirm Pino records contain `trace_id` and `span_id`.
 5. List metrics using the `talos.` prefix and inspect each metric's type, temporality, and labels.
 6. Validate one live query for every planned dashboard panel and alert.
@@ -188,39 +192,13 @@ Create alerts only after probing the exact service and metric combination for da
 
 Recommended initial rules:
 
-1. **Run failure rate**
-   - Signal: metric formula.
-   - Condition: failed runs divided by total runs above 20% over 10 minutes.
-   - Severity: critical.
-
-2. **Agent run stalled or silent**
-   - Signal: absent data or active-run/completion mismatch.
-   - Condition: an active run exists with no completion or step signal for five minutes.
-   - Severity: critical.
-
-3. **LLM error rate**
-   - Signal: metric formula.
-   - Condition: error calls divided by all calls above 10% over five minutes.
-   - Severity: warning.
-
-4. **LLM latency degradation**
-   - Signal: metric histogram.
-   - Condition: P95 `talos.gen_ai.call.duration` above the measured baseline.
-   - Severity: warning.
-
-5. **Model cost spike**
-   - Signal: metric counter increase.
-   - Condition: run or hourly cost exceeds the chosen budget.
-   - Severity: warning.
-
-6. **Browser API failures**
-   - Signal: metric or logs.
-   - Condition: repeated high-severity network failures in five minutes.
-   - Severity: warning.
-
-7. **Telemetry stopped arriving**
-   - Signal: absent data for `service.name = talos-api` or `talos-worker`.
-   - Severity: critical in production.
+1. **Run failure rate:** failed runs divided by total runs above 20% over 10 minutes.
+2. **Agent run stalled:** an active run has no completion or step signal for five minutes.
+3. **LLM error rate:** failed calls divided by all calls above 10% over five minutes.
+4. **LLM latency:** P95 `talos.gen_ai.call.duration` above the measured baseline.
+5. **Model cost spike:** hourly or per-run cost above the chosen budget.
+6. **Browser API failures:** repeated high-severity network failures in five minutes.
+7. **Telemetry absent:** no data from `talos-api` or `talos-worker` in the expected window.
 
 Use a five-minute evaluation window and one-minute frequency as starting values, then tune against real run volume. Include the resource scope, current value, threshold, owning team, and a real runbook link in alert annotations.
 
@@ -254,7 +232,7 @@ the same environment, and return evidence-backed likely causes.
 Use one controlled checkout failure:
 
 1. Start a test through the dashboard, Slack agent, or Talos MCP.
-2. The API enqueues the job and the BullMQ instrumentation propagates the active trace context.
+2. The API enqueues the job and BullMQ propagates the active trace context.
 3. The worker executes the browser agent and emits LLM, browser, database, Redis, and HTTP telemetry.
 4. The target app returns an intentional HTTP 500 during payment.
 5. Talos records the network issue and the run fails or becomes blocked.
