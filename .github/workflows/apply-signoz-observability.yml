@@ -7,12 +7,24 @@ on:
     paths:
       - .github/patches/signoz-worker.patch
       - .github/workflows/apply-signoz-observability.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/patches/signoz-worker.patch
+      - .github/workflows/apply-signoz-observability.yml
+      - casting.yaml
+      - package.json
+      - packages/engine/**
+      - apps/api/**
+      - apps/worker/**
 
 permissions:
   contents: write
 
 jobs:
   apply-verify-and-lock:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
