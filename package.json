@@ -17,7 +17,8 @@
     "migrate": "npm run migrate --workspace=packages/db",
     "dev:slack": "npm run dev --workspace=apps/slack-agent",
     "build:slack": "npm run build --workspace=apps/slack-agent",
-    "test:slack": "npm run test --workspace=apps/slack-agent"
+    "test:slack": "npm run test --workspace=apps/slack-agent",
+    "signoz:finalize": "bash scripts/finalize-signoz.sh"
   },
   "engines": {
     "node": ">=20"
