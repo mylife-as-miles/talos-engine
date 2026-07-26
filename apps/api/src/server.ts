@@ -80,7 +80,7 @@ await applyDbModelSettings(storage);
 await recoverInterruptedRuns(storage, runQueue, redis);
 
 // Health check
-app.get("/health", { config: { otel: false } }, async () => ({ status: "ok" }));
+app.get("/health", async () => ({ status: "ok" }));
 
 // Register routes — pass storage adapter and run queue
 registerProjectRoutes(app, storage, runQueue, redis);
