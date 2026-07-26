@@ -1,0 +1,243 @@
+# Talos Observability with SigNoz
+
+Talos emits OpenTelemetry traces, metrics, and logs to SigNoz so an agent run can be followed from the API request, through BullMQ and Redis, into the worker, browser agent, LLM calls, network failures, review agents, and final result.
+
+## Architecture
+
+```text
+Slack / Talos MCP / Dashboard
+          |
+          v
+      talos-api
+          |
+          | BullMQ producer span + propagated OTel context
+          v
+      talos-worker
+          |
+          +-- talos.agent.run
+          |    +-- gen_ai.chat spans
+          |    +-- agent-step events
+          |    +-- browser-network-error events
+          |    +-- PostgreSQL / Redis / HTTP spans
+          |
+          +-- correlated Pino logs
+          +-- custom agent and LLM metrics
+          |
+          v
+    OTLP HTTP :4318
+          |
+          v
+        SigNoz
+   traces + metrics + logs
+          |
+          v
+  SigNoz MCP :8000/mcp
+```
+
+The application is backend-neutral. Talos emits standard OpenTelemetry over OTLP, and SigNoz is selected through the collector endpoint rather than hard-coded into the engine.
+
+## What is instrumented
+
+### Node and Fastify
+
+The API and worker preload `scripts/otel-register.cjs` before any application module. It registers:
+
+- The OpenTelemetry Node auto-instrumentation bundle for supported HTTP, OpenAI, PostgreSQL, Redis/ioredis, Pino, runtime, and other Node libraries.
+- Fastify's official `@fastify/otel` instrumentation for route and handler spans. Lifecycle-hook spans are disabled to keep traces readable, and `/health` is ignored.
+- BullMQ instrumentation for producer and consumer spans.
+
+### BullMQ propagation
+
+`@appsignal/opentelemetry-instrumentation-bullmq` supports the BullMQ 5 version used by Talos. Talos enables `useProducerSpanAsConsumerParent`, making API enqueue and worker execution part of one distributed trace. Trace context remains in BullMQ's internal job metadata rather than being copied into Talos's `RunJobData`, so the application does not touch or duplicate the authentication payload.
+
+### Talos domain instrumentation
+
+The observed orchestration wrapper emits a `talos.agent.run` span and these metrics:
+
+| Metric | Type | Unit | Purpose |
+|---|---|---|---|
+| `talos.agent.runs.active` | UpDownCounter | `{run}` | Runs currently executing |
+| `talos.agent.runs` | Counter | `{run}` | Completed runs by status, environment, and trigger |
+| `talos.agent.run.duration` | Histogram | `s` | End-to-end run duration |
+| `talos.agent.steps` | Counter | `{step}` | Browser steps by action, status, and method |
+| `talos.gen_ai.calls` | Counter | `{call}` | LLM calls by provider, model, agent, and status |
+| `talos.gen_ai.call.duration` | Histogram | `s` | LLM latency |
+| `talos.gen_ai.tokens` | Counter | `{token}` | Input and output token volume |
+| `talos.gen_ai.cost` | Counter | `{USD}` | Estimated model cost |
+| `talos.browser.network.errors` | Counter | `{error}` | Action-correlated browser API failures |
+| `talos.qa.bugs` | Counter | `{bug}` | Bugs by severity, type, and source |
+
+High-cardinality values such as `runId`, `projectId`, `testId`, and step index are attached to spans and logs only. They are intentionally excluded from metric dimensions.
+
+## Privacy and security
+
+The shipped configuration explicitly sets `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=false`.
+
+Telemetry must not contain:
+
+- Authentication credentials, tokens, cookies, or TOTP secrets.
+- LLM prompts, completions, or tool arguments.
+- Screenshots, DOM content, or accessibility trees.
+- User-provided form values.
+- API keys or service-account credentials.
+- Full target URLs containing query strings or fragments.
+
+The custom instrumentation exports operational metadata only. Talos continues to store detailed testing evidence in its existing application data stores.
+
+## 1. Deploy SigNoz with Foundry
+
+The repository includes `casting.yaml` with the SigNoz MCP server enabled.
+
+```bash
+foundryctl gauge -f casting.yaml
+foundryctl forge -f casting.yaml
+foundryctl cast -f casting.yaml
+```
+
+`forge` writes `casting.yaml.lock`. Commit that generated lock file before hackathon submission so judges can reproduce the deployment. Never hand-author or guess it.
+
+Expected local endpoints:
+
+- SigNoz UI: `http://localhost:8080`
+- OTLP gRPC: `http://localhost:4317`
+- OTLP HTTP: `http://localhost:4318`
+- SigNoz MCP: `http://localhost:8000/mcp`
+
+## 2. Start Talos with telemetry
+
+### Docker Compose
+
+The Talos Compose stack sends OTLP HTTP data to `host.docker.internal:4318` by default:
+
+```bash
+docker compose up --build
+```
+
+Override the collector when necessary:
+
+```bash
+OTEL_EXPORTER_OTLP_ENDPOINT=http://collector.example:4318 docker compose up --build
+```
+
+### Native development
+
+Start SigNoz first, then run:
+
+```bash
+npm install
+npm run dev:observed
+```
+
+The observed launcher assigns separate service names to `talos-api` and `talos-worker` and preloads instrumentation before those processes import Fastify, BullMQ, Pino, PostgreSQL, Redis, or LLM SDKs.
+
+## 3. Verify ingestion before creating dashboards
+
+Do not create dashboards or alerts until data is present. Run one controlled Talos test, then use SigNoz MCP to discover the exact fields and metric metadata in the live instance.
+
+Required service names:
+
+- `talos-api`
+- `talos-worker`
+
+Recommended verification sequence:
+
+1. List services and confirm both names appear.
+2. Search traces for `service.name = talos-worker` and operation `talos.agent.run`.
+3. Confirm the trace includes Fastify request/handler spans, BullMQ publish/process spans, and downstream PostgreSQL, Redis, HTTP, and LLM spans.
+4. Search logs for the same trace ID and confirm Pino records contain `trace_id` and `span_id`.
+5. List metrics using the `talos.` prefix and inspect each metric's type, temporality, and labels.
+6. Validate one live query for every planned dashboard panel and alert.
+
+Discovery must happen independently for traces, logs, and metrics because a field available on one signal may not exist on another.
+
+## 4. Dashboard design
+
+Create a custom dashboard only after the verification sequence. Use `service.name` and `deployment.environment.name` as variables, and use exact field names returned by SigNoz MCP.
+
+### Run health
+
+- Active runs from `talos.agent.runs.active`.
+- Run throughput from `talos.agent.runs` using `increase` over the selected interval.
+- Success/failure ratio grouped by `talos.run.status`.
+- P50/P95/P99 run duration from `talos.agent.run.duration`.
+- BullMQ publish/process span rate and duration, discovered from live traces.
+
+### Agent execution
+
+- Steps by action from `talos.agent.steps`.
+- Failed steps grouped by `talos.agent.action`.
+- Execution method split: Stagehand, Playwright, and coordinates.
+- Trace table filtered to `talos.agent.run` with duration, status, environment, and run ID.
+
+### LLM operations
+
+- Calls by provider, model, and agent from `talos.gen_ai.calls`.
+- P50/P95/P99 call latency from `talos.gen_ai.call.duration`.
+- Input/output tokens from `talos.gen_ai.tokens` grouped by `gen_ai.token.type`.
+- Cost over time from `talos.gen_ai.cost`.
+- LLM error rate using failed calls divided by all calls.
+
+### QA signals
+
+- Browser network errors from `talos.browser.network.errors`.
+- Bugs by severity, type, and source from `talos.qa.bugs`.
+- Error-log trend for `service.name = talos-worker`.
+- Recent failed runs with links into their traces.
+
+Use per-interval `increase` for low-volume, human-paced counters rather than rendering tiny per-second values. Prefer SigNoz's derived span metrics for long-window RED panels and alert evaluation when those metrics are present.
+
+## 5. Alerts
+
+Create alerts only after probing the exact service and metric combination for data.
+
+Recommended initial rules:
+
+1. **Run failure rate:** failed runs divided by total runs above 20% over 10 minutes.
+2. **Agent run stalled:** an active run has no completion or step signal for five minutes.
+3. **LLM error rate:** failed calls divided by all calls above 10% over five minutes.
+4. **LLM latency:** P95 `talos.gen_ai.call.duration` above the measured baseline.
+5. **Model cost spike:** hourly or per-run cost above the chosen budget.
+6. **Browser API failures:** repeated high-severity network failures in five minutes.
+7. **Telemetry absent:** no data from `talos-api` or `talos-worker` in the expected window.
+
+Use a five-minute evaluation window and one-minute frequency as starting values, then tune against real run volume. Include the resource scope, current value, threshold, owning team, and a real runbook link in alert annotations.
+
+## 6. Host metrics
+
+Foundry's OpenTelemetry Collector can collect CPU, memory, disk, network, process, and system metrics. Keep host/container identity separate from application identity and verify the join attribute before combining infrastructure panels with Talos services.
+
+Do not assume `service.name` exists on host metrics. Discover and use `host.name`, `container.name`, or the actual workload attribute emitted by the deployment.
+
+## 7. SigNoz MCP workflow
+
+The SigNoz MCP endpoint is enabled by Foundry, but API keys are not stored in `casting.yaml` or source control.
+
+1. Create a least-privilege SigNoz service account.
+2. Create its API key and keep it in the MCP client's secret store.
+3. Connect the client to `http://localhost:8000/mcp` with the `SIGNOZ-API-KEY` request header.
+4. Install the official `SigNoz/agent-skills` plugin in the coding-agent client.
+5. Use Talos MCP to start or inspect a test and SigNoz MCP to investigate the resulting traces, logs, metrics, dashboards, and alerts.
+
+Example investigation intent:
+
+```text
+Investigate Talos run <run-id>. Find its talos.agent.run trace, identify the
+slowest agent, LLM, browser, database, and queue operations, correlate error
+logs and network-error events, compare the run with recent successful runs in
+the same environment, and return evidence-backed likely causes.
+```
+
+## 8. Demo scenario
+
+Use one controlled checkout failure:
+
+1. Start a test through the dashboard, Slack agent, or Talos MCP.
+2. The API enqueues the job and BullMQ propagates the active trace context.
+3. The worker executes the browser agent and emits LLM, browser, database, Redis, and HTTP telemetry.
+4. The target app returns an intentional HTTP 500 during payment.
+5. Talos records the network issue and the run fails or becomes blocked.
+6. A SigNoz alert fires.
+7. SigNoz MCP investigates the trace and correlated logs.
+8. The final report explains the failing action, endpoint status, upstream agent decision, latency, token/cost impact, and recommended next action.
+
+This demonstrates the full hackathon loop: observable agent execution, cross-signal diagnosis, dashboards, alerts, and AI-assisted investigation through SigNoz MCP.

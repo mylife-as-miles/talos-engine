@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import staticPlugin from "@fastify/static";
+import { trace } from "@opentelemetry/api";
 import { fileURLToPath } from "url";
 import path from "path";
 import fs from "fs";
@@ -51,11 +52,23 @@ await app.register(cors, {
   credentials: true,
 });
 
-// Per-request correlation ID: extract runId from URL params for run-scoped logging
+// Attach stable route/run metadata to the active HTTP span. Never attach request
+// bodies, credentials, prompts, or query strings to observability attributes.
 app.addHook("onRequest", (request, _reply, done) => {
   const runIdMatch = request.url.match(/\/runs\/([a-f0-9-]+)/);
-  if (runIdMatch) {
-    (request as any).runCorrelationId = runIdMatch[1];
+  const runId = runIdMatch?.[1];
+  if (runId) {
+    (request as any).runCorrelationId = runId;
+  }
+
+  const span = trace.getActiveSpan();
+  const route = request.routeOptions?.url;
+  if (span && route) {
+    span.updateName(`${request.method} ${route}`);
+    span.setAttribute("http.route", route);
+  }
+  if (span && runId) {
+    span.setAttribute("talos.run.id", runId);
   }
   done();
 });

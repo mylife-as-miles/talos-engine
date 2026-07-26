@@ -2,6 +2,7 @@ import type { Page, Request, Response } from "playwright";
 import type { NetworkBug } from "./types.js";
 import { logger } from "./logger.js";
 import { getTokenSession, refreshIfNeeded } from "./tokenAuth.js";
+import { recordNetworkBug } from "./telemetry.js";
 
 // ─── Filtering: only API / data requests ─────────────────────────────────────
 
@@ -48,7 +49,9 @@ export function attachNetworkMonitor(page: Page): NetworkMonitorResult {
     const key = `${bug.type}|${bug.statusCode ?? ""}|${bug.url?.slice(0, 80) ?? ""}`;
     if (seenKeys.has(key)) return;
     seenKeys.add(key);
-    bugs.push({ ...bug, source: "network" });
+    const observedBug: NetworkBug = { ...bug, source: "network" };
+    bugs.push(observedBug);
+    recordNetworkBug(observedBug);
     logger.debug({ type: bug.type, url: bug.url }, "NetworkMonitor: action-correlated bug");
   }
 
@@ -60,7 +63,7 @@ export function attachNetworkMonitor(page: Page): NetworkMonitorResult {
     const errorText = failure?.errorText ?? "failed";
     addBug({
       type: "request_failed",
-      description: `${req.method()} ${url.slice(0, 80)} \u2014 ${errorText}`,
+      description: `${req.method()} ${url.slice(0, 80)} — ${errorText}`,
       severity: "high",
       url: url.slice(0, 200),
       at: Date.now(),
@@ -92,7 +95,7 @@ export function attachNetworkMonitor(page: Page): NetworkMonitorResult {
     if (is5xx || is4xxMutating) {
       addBug({
         type: "http_error",
-        description: `${method} ${url.slice(0, 80)} \u2192 HTTP ${status}`,
+        description: `${method} ${url.slice(0, 80)} → HTTP ${status}`,
         severity: is5xx ? "high" : "medium",
         url: url.slice(0, 200),
         statusCode: status,

@@ -31,8 +31,9 @@ COPY apps/web/package.json apps/web/
 RUN npm install --ignore-scripts --workspaces --include-workspace-root
 RUN npx playwright install ffmpeg
 
-# Copy source
+# Copy source and the preload file used by NODE_OPTIONS.
 COPY tsconfig.base.json ./
+COPY scripts/ scripts/
 COPY packages/ packages/
 COPY apps/ apps/
 

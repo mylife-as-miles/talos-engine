@@ -10,16 +10,25 @@
     "build:libs": "npm run build --workspace=@talos/engine --workspace=@talos/db",
     "postinstall": "npm run build:libs",
     "dev": "VIDEOS_DIR=$PWD/data/videos SCREENSHOTS_DIR=$PWD/data/screenshots concurrently --names api,worker,web --prefix-colors cyan,yellow,magenta \"PORT=11114 npm run dev:api\" \"PORT=11114 npm run dev:worker\" \"npm run dev:web\"",
+    "dev:observed": "node scripts/dev-observed.mjs",
     "dev:api": "npm run dev --workspace=apps/api",
     "dev:worker": "npm run dev --workspace=apps/worker",
     "dev:web": "npm run dev --workspace=apps/web",
     "migrate": "npm run migrate --workspace=packages/db",
     "dev:slack": "npm run dev --workspace=apps/slack-agent",
     "build:slack": "npm run build --workspace=apps/slack-agent",
-    "test:slack": "npm run test --workspace=apps/slack-agent"
+    "test:slack": "npm run test --workspace=apps/slack-agent",
+    "signoz:finalize": "bash scripts/finalize-signoz.sh"
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "@appsignal/opentelemetry-instrumentation-bullmq": "^0.8.0",
+    "@fastify/otel": "^0.20.1",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.79.0",
+    "@opentelemetry/instrumentation": "^0.221.0"
   },
   "devDependencies": {
     "concurrently": "^10.0.3"
